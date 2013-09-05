@@ -4,6 +4,7 @@ import play.api._
 import play.api.mvc._
 import controllers.Indexing.{ YesIHaveIt, SearchFuncs }
 import akka.actor.Props
+import akka.actor.ActorRef
 import play.api.libs.concurrent.Akka
 import akka.pattern.ask
 import play.api.data._
@@ -34,27 +35,36 @@ object Application extends Controller {
       val (t, _) = traceForm.bindFromRequest().get
       val funcLines = t.split('\n').filter(_.contains("java:")).toList
 
-      val reg = """([at\\s])?(?:[a-zA-Z][a-zA-Z\\.\\d\\-]+)""".r
-
-      val fqdns = funcLines map { x =>
-        (reg findAllIn x).take(2).toSeq.last
+      val funcs = funcLines map { x =>
+        val s = x.split(' ').last.split('(')
+        val f = s.head
+        val l = s.last.split(':').last.split(')').head
+        (f, l)
       }
 
-      val pkgPrefixes = fqdns map { x =>
+      // val reg = """([at\\s])?(?:[a-zA-Z][a-zA-Z\\.\\d\\-]+)""".r
+
+      // val fqdns = funcLines map { x =>
+      //   (reg findAllIn x).take(2).toSeq.last
+      // }
+
+      val fqns = funcs map (p => p._1)
+
+      val pkgPrefixes = fqns map { x =>
         x.split('.').takeWhile(_.charAt(0).isLower).mkString(".")
       }
 
       val prefixSet = pkgPrefixes.toSet
 
-      val groupSet = prefixSet map { x =>
-        funcLines.filter(_.contains(x))
+      val groups = prefixSet map { x =>
+        funcs.filter{case(k, v) => k.contains(x)}
       }
 
-      val askers = groupSet map { g =>
+      val askers = groups map { g =>
         (Akka.system.actorOf(Props[Asker]), SearchFuncs(g))
       }
       
-      val futures = askers.map(a => a._1 ? a._2).toSeq
+      // val futures = askers.map(a => a._1 ? a._2).toSeq
 
 //      val names = futures map {
 //        x: Any =>
@@ -62,11 +72,19 @@ object Application extends Controller {
 //      } 
 //      Ok (names.mkString(";"))
       Async {
-      futures.head map { x: Any =>
-    	  Ok(x.asInstanceOf[YesIHaveIt].jarName)
+        val res = askAndAcc(askers)
+        res map {x: Any => 
+          Ok(x.toString)
+        }
       }
-    	  
-    }
 
+  }
+
+  def askAndAcc(askers: Set[(ActorRef, SearchFuncs)]) = {
+    val futures = askers.map(a => a._1 ? a._2).toSeq
+    val names = Future.reduce(futures) { (a, b) => 
+      a + ";" + b
+    }
+    names
   }
 }
