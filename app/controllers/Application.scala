@@ -15,11 +15,12 @@ import scala.concurrent.duration._
 import scala.concurrent._
 import controllers.Indexing._
 import play.api.libs.concurrent.Execution.Implicits._
-
 import Indexing._
+import akka.pattern.AskTimeoutException
+import play.api.templates.Html
 
 object Application extends Controller {
-  implicit val timeout = Timeout(10.second)
+  implicit val timeout = Timeout(5.second)
 
   val traceForm = Form(
     tuple(
@@ -74,16 +75,17 @@ object Application extends Controller {
       Async {
         val res = askAndAcc(askers)
         res map {x: Any => 
-          Ok(x.toString)
+          Ok(views.html.main("Result")(new Html(new StringBuilder(x.toString))))
         }
       }
 
   }
 
   def askAndAcc(askers: Set[(ActorRef, SearchFuncs)]) = {
-    val futures = askers.map(a => a._1 ? a._2).toSeq
+    val futures = askers.map(a => a._1 ? a._2)//.mapTo[Option[YesIHaveIt]])
     val names = Future.reduce(futures) { (a, b) => 
-      a + ";" + b
+//      Some(YesIHaveIt(a.get.jarName + ";" + b.map(_.jarName).getOrElse("Not Found.")))
+      a + "\n" + b
     }
     names
   }

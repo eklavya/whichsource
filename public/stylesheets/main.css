@@ -1,0 +1,25 @@
+body {
+	font-family: 'Consolas';
+}
+
+.notFound {
+	background: #FFF7D6;
+	border-radius: 25px;
+	margin: 50px;
+	padding: 30px;
+}
+
+.found {
+	background: #F5F5F5;
+	border-radius: 25px;
+	margin: 50px;
+	padding: 30px;
+}
+
+.jars {
+	background: #92D13D;
+	color: white;
+	border-radius: 25px;
+	margin: 50px;
+	padding: 30px;
+}

@@ -1,7 +1,7 @@
 package controllers
 
 import akka.actor._
-import scala.collection.immutable.HashMap
+import scala.collection.mutable.{ HashMap, MultiMap, Set }
 import collection.JavaConversions._
 import java.util.jar.JarFile
 import java.util.jar.JarEntry
@@ -14,13 +14,14 @@ import scala.io.Codec
 object Indexing {
   case class DoYouHaveIt(funcName: String, line: Int)
   case class YesIHaveIt(jarName: String)
+  case object NoIDont
   case class SearchFuncs(cond: List[(String, String)])
   case class Func(start: Int, end: Int, body: Option[String])
 }
 
 class Indexer(jarPath: String) extends Actor {
   val jarName = jarPath
-  var funcMap = Map.empty[String, Func]
+  var funcMap = new HashMap[String, Set[Func]] with MultiMap[String, Func]
 
   def extractMethods(fName: String, is: InputStream) {
     val parser = ASTParser.newParser(AST.JLS4)
@@ -38,8 +39,8 @@ class Indexer(jarPath: String) extends Actor {
       val end   = start + cu.getLineNumber(node.getLength)
       val body  = Option(node.getBody).map(x => Some(x.toString)).getOrElse(None)
       // println(node.getName + " " + start + " " + end + " " + body.getOrElse("no body"))
-      // println(fqn + "." + node.getName.getFullyQualifiedName)
-      funcMap  += (fqn + "." + node.getName.getFullyQualifiedName -> Func(start, end, body))
+      // println(fqn + "." + node.getName.getFullyQualifiedName + node.parameters)
+      funcMap.addBinding(fqn + "." + node.getName.getFullyQualifiedName, Func(start, end, body))
       super.visit(node)
     }
   }
@@ -56,10 +57,17 @@ class Indexer(jarPath: String) extends Actor {
   def receive = {
     case SearchFuncs(funcList) =>
     val s = sender
-    println("Searching if I have it.")
-    val holds = !funcList.exists{case(f, l) => funcMap.get(f).map(x => (l.toInt >= x.start) && (l.toInt <= x.end)).getOrElse(true)}
+    println(self.path + " searching for...")
+    // funcList foreach { case (f, l) =>
+    //   println(f + " at " + funcMap(f).start)
+    // }
+    // val holds = !funcList.exists{case(f, l) => funcMap.get(f).map(x => (l.toInt >= x.start) && (l.toInt <= x.end)).getOrElse(true)}
+    val holds = !funcList.exists{case(f, l) => !funcMap.entryExists(f, (x => (l.toInt >= x.start) && (l.toInt <= x.end)))}//.get(f).map(x => (l.toInt >= x.start) && (l.toInt <= x.end)).getOrElse(true)}
     if (holds) {
+      println(self.path + " has it.")
       s ! YesIHaveIt(jarName)
+    } else {
+      s ! NoIDont
     }
   }
 }
