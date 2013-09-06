@@ -12,11 +12,10 @@ import org.eclipse.jdt.core.dom._
 import scala.io.Codec
 
 object Indexing {
-  case class DoYouHaveIt(funcName: String, line: Int)
-  case class YesIHaveIt(jarName: String)
+  case class  YesIHaveIt(jarName: String)
   case object NoIDont
-  case class SearchFuncs(cond: List[(String, String)])
-  case class Func(start: Int, end: Int, body: Option[String])
+  case class  SearchFuncs(cond: List[(String, String)])
+  case class  Func(start: Int, end: Int, body: Option[String])
 }
 
 class Indexer(jarPath: String) extends Actor {
@@ -38,18 +37,14 @@ class Indexer(jarPath: String) extends Actor {
       val start = cu.getLineNumber(node.getStartPosition)
       val end   = start + cu.getLineNumber(node.getLength)
       val body  = Option(node.getBody).map(x => Some(x.toString)).getOrElse(None)
-      // println(node.getName + " " + start + " " + end + " " + body.getOrElse("no body"))
-      // println(fqn + "." + node.getName.getFullyQualifiedName + node.parameters)
       funcMap.addBinding(fqn + "." + node.getName.getFullyQualifiedName, Func(start, end, body))
       super.visit(node)
     }
   }
 
   override def preStart = {
-    // println("Indexer spawned for " + jarPath)
     val jarFile = new JarFile(jarPath)
     jarFile.entries.filter(_.getName.contains(".java")) foreach { x =>
-      // println("Calling extractMethods on " + x.getName)
       extractMethods(x.getName, jarFile.getInputStream(x))
     }
   }
@@ -57,14 +52,8 @@ class Indexer(jarPath: String) extends Actor {
   def receive = {
     case SearchFuncs(funcList) =>
     val s = sender
-    println(self.path + " searching for...")
-    // funcList foreach { case (f, l) =>
-    //   println(f + " at " + funcMap(f).start)
-    // }
-    // val holds = !funcList.exists{case(f, l) => funcMap.get(f).map(x => (l.toInt >= x.start) && (l.toInt <= x.end)).getOrElse(true)}
     val holds = !funcList.exists{case(f, l) => !funcMap.entryExists(f, (x => (l.toInt >= x.start) && (l.toInt <= x.end)))}//.get(f).map(x => (l.toInt >= x.start) && (l.toInt <= x.end)).getOrElse(true)}
     if (holds) {
-      println(self.path + " has it.")
       s ! YesIHaveIt(jarName)
     } else {
       s ! NoIDont
