@@ -24,7 +24,7 @@ class Manager(jarPath: String) extends Actor {
 
   def receive = {
     case SearchFuncs(conds) =>
-      println("We got asked, forwarding!")
+      println("Asker called, forwarding!")
       context.children.foreach(_ forward SearchFuncs(conds))
   }
 }
