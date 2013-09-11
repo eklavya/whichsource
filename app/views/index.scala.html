@@ -1,13 +1,11 @@
 @(message: String)
 @import helper._
 @main("Welcome to Play 2.1") {
-    
-    <div>@message</div>
-    <div>
-        @form(action = routes.Application.sourceFinder()) {
-            <textarea name="trace" id="trace"></textarea>
-            <input name="submit" type="submit" value="Post" />
-        }
-    </div>
-    
+
+	<div id="traceDiv">
+		@form(action = routes.Application.sourceFinder()) {
+			<textarea name="trace" id="trace" placeholder="Paste your stacktrace here."></textarea>
+			<input name="submit" id="submit" type="submit" value="Post" />
+		}
+	</div>
 }

@@ -1,25 +1,68 @@
 body {
 	font-family: 'Consolas', 'Inconsolata';
+	background: #1ABC9C;
 }
 
 .notFound {
-	background: #FFF7D6;
+	background: #E74C3C;
 	border-radius: 25px;
 	margin: 50px;
 	padding: 30px;
+	color: white;
 }
 
 .found {
-	background: #F5F5F5;
+	background: #16a085;
 	border-radius: 25px;
 	margin: 50px;
 	padding: 30px;
+	color: white;
 }
 
 .jars {
-	background: #92D13D;
+	background: #1ABC9C;
 	color: white;
 	border-radius: 25px;
 	margin: 50px;
 	padding: 30px;
+}
+
+
+#mainDiv {
+	margin: 0 auto;
+	min-width: 50%;
+	width: 80%;
+	/*margin: 25%;*/
+}
+
+.mainHeading {
+	font-size: 32pt;
+	font-family: 'Quintessential';
+	color: white;
+	text-align: center;
+}
+
+#traceDiv {
+	margin: 0 auto;
+}
+
+#trace {
+	min-width: 100%;
+	min-height: 350px;
+	margin: 0 auto;
+	padding: 15px;
+}
+
+#submit {
+	width: 150px;
+	display: block;
+	background: #34495E;
+	height: 50px;
+	margin: 0 auto;
+	margin-top: 20px;
+	border-radius: 10px;
+	color: white;
+	border: 0px;
+	font-size: 14pt;
+	font-family: 'Quintessential';
 }
