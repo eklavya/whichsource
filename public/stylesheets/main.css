@@ -1,10 +1,9 @@
 body {
 	font-family: 'Consolas', 'Inconsolata';
-	background: #1ABC9C;
 }
 
 .notFound {
-	background: #E74C3C;
+	background: #DD514C;
 	border-radius: 25px;
 	margin: 50px;
 	padding: 30px;
@@ -12,7 +11,7 @@ body {
 }
 
 .found {
-	background: #16a085;
+	background: #5EB95E;
 	border-radius: 25px;
 	margin: 50px;
 	padding: 30px;
@@ -20,8 +19,8 @@ body {
 }
 
 .jars {
-	background: #1ABC9C;
-	color: white;
+	background: lightblue;
+	color: black;
 	border-radius: 25px;
 	margin: 50px;
 	padding: 30px;
@@ -32,13 +31,11 @@ body {
 	margin: 0 auto;
 	min-width: 50%;
 	width: 80%;
-	/*margin: 25%;*/
 }
 
 .mainHeading {
 	font-size: 32pt;
 	font-family: 'Quintessential';
-	color: white;
 	text-align: center;
 }
 
@@ -56,7 +53,7 @@ body {
 #submit {
 	width: 150px;
 	display: block;
-	background: #34495E;
+	background: #0E90D2;
 	height: 50px;
 	margin: 0 auto;
 	margin-top: 20px;
