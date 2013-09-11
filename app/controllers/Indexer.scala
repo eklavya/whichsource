@@ -52,7 +52,7 @@ class Indexer(jarPath: String) extends Actor {
   def receive = {
     case SearchFuncs(funcList) =>
     val s = sender
-    val holds = !funcList.exists{case(f, l) => !funcMap.entryExists(f, (x => (l.toInt >= x.start) && (l.toInt <= x.end)))}//.get(f).map(x => (l.toInt >= x.start) && (l.toInt <= x.end)).getOrElse(true)}
+    val holds = !funcList.exists{case(f, l) => !funcMap.entryExists(f, x => (l.toInt >= x.start) && (l.toInt <= x.end))}
     if (holds) {
       s ! YesIHaveIt(jarName)
     } else {

@@ -33,50 +33,57 @@ object Application extends Controller {
 
   def sourceFinder = Action { implicit request =>
 
-    val (t, _) = traceForm.bindFromRequest().get
-    val funcLines = t.split('\n').filter(_.contains("java:")).toList
+    traceForm.bindFromRequest().fold (
+      errors => BadRequest("Not a valid stacktrace."),
+      trace  => {
+        val (t, _) = trace
 
-    val funcs = funcLines map { x =>
-      val s = x.split(' ').last.split('(')
-      val f = s.head
-      val l = s.last.split(':').last.split(')').head
-      (f, l)
-    }
+        val funcLines = t.split('\n').filter(_.contains("java:")).toList
 
-    val fqns = funcs map (p => p._1)
+        val funcs = funcLines map { x =>
+          val s = x.split(' ').last.split('(')
+          val f = s.head
+          val l = s.last.split(':').last.split(')').head
+          (f, l)
+        }
 
-    val pkgPrefixes = fqns map { x =>
-      x.split('.').takeWhile(_.charAt(0).isLower).mkString(".")
-    }
+        val fqns = funcs map (p => p._1)
 
-    val prefixSet = pkgPrefixes.toSet
+        val pkgPrefixes = fqns map { x =>
+          x.split('.').takeWhile(_.charAt(0).isLower).mkString(".")
+        }
 
-    val groups = prefixSet map { x =>
-      funcs.filter { case (k, v) => k.contains(x) }
-    }
+        val prefixSet = pkgPrefixes.toSet
 
-    val askers = groups map { g =>
-      (Akka.system.actorOf(Props[Asker]), SearchFuncs(g))
-    }
+        val groups = prefixSet map { x =>
+          funcs.filter { case (k, v) => k.contains(x) }
+        }
 
-    Async {
-      val res = askAndAcc(askers)
-      res map { x: Any =>
-        Ok(views.html.main("Result")(new Html(new StringBuilder(x.toString))))
+        val askers = groups map { g =>
+          (Akka.system.actorOf(Props[Asker]), SearchFuncs(g))
+        }
+
+        if (askers.isEmpty) {
+          BadRequest("Not a valid stacktrace.")
+        } else {
+          Async {
+            val res = askAndAcc(askers)
+            res map { x: Any =>
+              Ok(views.html.main("Result")(new Html(new StringBuilder(x.toString))))
+            }
+          }
+        }
       }
-    }
-
+    )
   }
+
+
 
   def askAndAcc(askers: Set[(ActorRef, SearchFuncs)]) = {
     val futures = askers.map(a => a._1 ? a._2)
-    if (!askers.isEmpty) {
-      val names = Future.reduce(futures) { (a, b) =>
-        a + "\n" + b
-      }
-      names
-    } else {
-      Future("Not a valid stacktrace.")
-    } 
+    val names = Future.reduce(futures) { (a, b) =>
+      a + "\n" + b
+    }
+    names
   }
 }
