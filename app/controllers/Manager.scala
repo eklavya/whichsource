@@ -22,12 +22,12 @@ class Manager(jarPath: String) extends Actor {
   def beforeIndexing: Receive = {
     case DoneIndexing =>
       indexing = indexing - sender
-
-    case _ =>
       if (indexing.isEmpty) {
-        sender ! DoneIndexing
         context.become(afterIndexing)
       }
+
+    case _ =>
+      sender ! StillIndexing
   }
 
   def afterIndexing: Receive = {

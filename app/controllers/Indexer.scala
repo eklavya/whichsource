@@ -17,6 +17,7 @@ object Indexing {
   case class  SearchFuncs(cond: List[(String, String)])
   case class  Func(start: Int, end: Int, body: Option[String])
   case object DoneIndexing
+  case object StillIndexing
 }
 
 class Indexer(jarPath: String) extends Actor {
