@@ -3,23 +3,63 @@ body {
 }
 
 .notFound {
-	background: #FFF7D6;
+	background: #DD514C;
 	border-radius: 25px;
 	margin: 50px;
 	padding: 30px;
+	color: white;
 }
 
 .found {
-	background: #F5F5F5;
+	background: #5EB95E;
+	border-radius: 25px;
+	margin: 50px;
+	padding: 30px;
+	color: white;
+}
+
+.jars {
+	background: lightblue;
+	color: black;
 	border-radius: 25px;
 	margin: 50px;
 	padding: 30px;
 }
 
-.jars {
-	background: #92D13D;
+
+#mainDiv {
+	margin: 0 auto;
+	min-width: 50%;
+	width: 80%;
+}
+
+.mainHeading {
+	font-size: 32pt;
+	font-family: 'Quintessential';
+	text-align: center;
+}
+
+#traceDiv {
+	margin: 0 auto;
+}
+
+#trace {
+	min-width: 100%;
+	min-height: 350px;
+	margin: 0 auto;
+	padding: 15px;
+}
+
+#submit {
+	width: 150px;
+	display: block;
+	background: #0E90D2;
+	height: 50px;
+	margin: 0 auto;
+	margin-top: 20px;
+	border-radius: 10px;
 	color: white;
-	border-radius: 25px;
-	margin: 50px;
-	padding: 30px;
+	border: 0px;
+	font-size: 14pt;
+	font-family: 'Quintessential';
 }

@@ -16,6 +16,8 @@ object Indexing {
   case object NoIDont
   case class  SearchFuncs(cond: List[(String, String)])
   case class  Func(start: Int, end: Int, body: Option[String])
+  case object DoneIndexing
+  case object StillIndexing
 }
 
 class Indexer(jarPath: String) extends Actor {
@@ -47,12 +49,13 @@ class Indexer(jarPath: String) extends Actor {
     jarFile.entries.filter(_.getName.contains(".java")) foreach { x =>
       extractMethods(x.getName, jarFile.getInputStream(x))
     }
+    context.actorSelection("akka://application/user/Manager") ! DoneIndexing
   }
 
   def receive = {
     case SearchFuncs(funcList) =>
     val s = sender
-    val holds = !funcList.exists{case(f, l) => !funcMap.entryExists(f, (x => (l.toInt >= x.start) && (l.toInt <= x.end)))}//.get(f).map(x => (l.toInt >= x.start) && (l.toInt <= x.end)).getOrElse(true)}
+    val holds = !funcList.exists{case(f, l) => !funcMap.entryExists(f, x => (l.toInt >= x.start) && (l.toInt <= x.end))}
     if (holds) {
       s ! YesIHaveIt(jarName)
     } else {
