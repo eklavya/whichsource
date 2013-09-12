@@ -20,7 +20,7 @@ import akka.pattern.AskTimeoutException
 import play.api.templates.Html
 
 object Application extends Controller {
-  implicit val timeout = Timeout(5.second)
+  implicit val timeout = Timeout(6.second)
 
   val traceForm = Form(
     tuple(

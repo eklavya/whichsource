@@ -16,6 +16,7 @@ object Indexing {
   case object NoIDont
   case class  SearchFuncs(cond: List[(String, String)])
   case class  Func(start: Int, end: Int, body: Option[String])
+  case object DoneIndexing
 }
 
 class Indexer(jarPath: String) extends Actor {
@@ -47,6 +48,7 @@ class Indexer(jarPath: String) extends Actor {
     jarFile.entries.filter(_.getName.contains(".java")) foreach { x =>
       extractMethods(x.getName, jarFile.getInputStream(x))
     }
+    context.actorSelection("akka://application/user/Manager") ! DoneIndexing
   }
 
   def receive = {
