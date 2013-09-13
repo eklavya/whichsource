@@ -67,12 +67,13 @@ object Application extends Controller {
           BadRequest("Not a valid stacktrace.")
         } else {
           Async {
-            val res = askAndAcc(askers)
-            res map { x: Any =>
-              Ok(views.html.main("Result")(new Html(new StringBuilder(x.toString))))
+            val resList = askAndAcc(askers)
+            resList map { x: List[(String, Html)] =>
+              Ok(views.html.results(x))
             }
           }
         }
+//        Ok(views.html.source("some jar here -> some file")(funcLines)(0)(4))
       }
     )
   }
@@ -81,9 +82,10 @@ object Application extends Controller {
 
   def askAndAcc(askers: Set[(ActorRef, SearchFuncs)]) = {
     val futures = askers.map(a => a._1 ? a._2)
-    val names = Future.reduce(futures) { (a, b) =>
-      a + "\n" + b
-    }
+    val names = Future.fold(futures)(List[(String, Html)]())((a, b) => a ++ b.asInstanceOf[List[(String, Html)]])
+//    val names = Future.reduce(futures) { (a, b) =>
+//      a + "\n" + b
+//    }
     names
   }
 }

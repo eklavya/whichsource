@@ -10,12 +10,13 @@ import Indexing._
 import java.io.File
 import org.eclipse.jdt.core.dom._
 import scala.io.Codec
+import play.api.templates.Html
 
 object Indexing {
-  case class  YesIHaveIt(jarName: String)
+  case class  YesIHaveIt(jarName: String, funcs: List[(String, Func)])
   case object NoIDont
   case class  SearchFuncs(cond: List[(String, String)])
-  case class  Func(start: Int, end: Int, body: Option[String])
+  case class  Func(name: String, start: Int, end: Int, body: Option[String])
   case object DoneIndexing
   case object StillIndexing
 }
@@ -39,7 +40,7 @@ class Indexer(jarPath: String) extends Actor {
       val start = cu.getLineNumber(node.getStartPosition)
       val end   = start + cu.getLineNumber(node.getLength)
       val body  = Option(node.getBody).map(x => Some(x.toString)).getOrElse(None)
-      funcMap.addBinding(fqn + "." + node.getName.getFullyQualifiedName, Func(start, end, body))
+      funcMap.addBinding(fqn + "." + node.getName.getFullyQualifiedName, Func(fqn + "." + node.getName.getFullyQualifiedName, start, end, body))
       super.visit(node)
     }
   }
@@ -57,7 +58,11 @@ class Indexer(jarPath: String) extends Actor {
     val s = sender
     val holds = !funcList.exists{case(f, l) => !funcMap.entryExists(f, x => (l.toInt >= x.start) && (l.toInt <= x.end))}
     if (holds) {
-      s ! YesIHaveIt(jarName)
+      val funcs = funcList map { case (f, l) =>
+        val func = funcMap(f).filter(x => (l.toInt >= x.start) && (l.toInt <= x.end)).head
+        (f, func)
+      }
+      s ! YesIHaveIt(jarName.split('/').toList.last, funcs)
     } else {
       s ! NoIDont
     }
