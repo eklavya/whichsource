@@ -38,30 +38,7 @@ object Application extends Controller {
       trace  => {
         val (t, _) = trace
 
-        val funcLines = t.split('\n').filter(_.contains("java:")).toList
-
-        val funcs = funcLines map { x =>
-          val s = x.split(' ').last.split('(')
-          val f = s.head
-          val l = s.last.split(':').last.split(')').head
-          (f, l)
-        }
-
-        val fqns = funcs map (p => p._1)
-
-        val pkgPrefixes = fqns map { x =>
-          x.split('.').takeWhile(_.charAt(0).isLower).mkString(".")
-        }
-
-        val prefixSet = pkgPrefixes.toSet
-
-        val groups = prefixSet map { x =>
-          funcs.filter { case (k, v) => k.contains(x) }
-        }
-
-        val askers = groups map { g =>
-          (Akka.system.actorOf(Props[Asker]), SearchFuncs(g))
-        }
+        val askers = spawnAskers(t)
 
         if (askers.isEmpty) {
           BadRequest("Not a valid stacktrace.")
@@ -78,19 +55,42 @@ object Application extends Controller {
             }
           }
         }
-//        Ok(views.html.source("some jar here -> some file")(funcLines)(0)(4))
       }
     )
   }
 
 
+  def spawnAskers(t: String) = {
+    val funcLines = t.split('\n').filter(_.contains("java:")).toList
+
+    val funcs = funcLines map { x =>
+      val s = x.split(' ').last.split('(')
+      val f = s.head
+      val l = s.last.split(':').last.split(')').head
+      (f, l)
+    }
+
+    val fqns = funcs map (p => p._1)
+
+    val pkgPrefixes = fqns map { x =>
+      x.split('.').takeWhile(_.charAt(0).isLower).mkString(".")
+    }
+
+    val prefixSet = pkgPrefixes.toSet
+
+    val groups = prefixSet map { x =>
+      funcs.filter { case (k, v) => k.contains(x) }
+    }
+
+    val askers = groups map { g =>
+      (Akka.system.actorOf(Props[Asker]), SearchFuncs(g))
+    }
+    askers
+  }
 
   def askAndAcc(askers: Set[(ActorRef, SearchFuncs)]) = {
     val futures = askers.map(a => a._1 ? a._2)
     val names = Future.fold(futures)(List[(String, Html)]())((a, b) => a ++ b.asInstanceOf[List[(String, Html)]])
-//    val names = Future.reduce(futures) { (a, b) =>
-//      a + "\n" + b
-//    }
     names
   }
 }
