@@ -69,7 +69,12 @@ object Application extends Controller {
           Async {
             val resList = askAndAcc(askers)
             resList map { x: List[(String, Html)] =>
-              Ok(views.html.results(x))
+              var s = Map.empty[String, List[Html]]
+              x foreach { y =>
+                if (!s.contains(y._1)) s += (y._1 -> List[Html]())
+                s = s + (y._1 -> (s(y._1) :+ y._2))
+              }
+              Ok(views.html.results(s.toList))
             }
           }
         }

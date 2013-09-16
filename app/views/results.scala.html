@@ -1,4 +1,4 @@
-@(resList: List[(String, Html)])
+@(resList: List[(String, List[Html])])
 <!DOCTYPE html>
 <html>
     <head>
@@ -7,26 +7,37 @@
         <script src="@routes.Assets.at("javascripts/jquery-1.9.0.min.js")" type="text/javascript"></script>
         <link href='http://fonts.googleapis.com/css?family=Inconsolata:400' rel='stylesheet' type='text/css'>
         <link href='http://fonts.googleapis.com/css?family=Quintessential' rel='stylesheet' type='text/css'>
+        <script type="text/javascript">
+            function showSource(num) {
+                var bodies = document.getElementsByClassName("body" );
+                for (var i = 0; i < bodies.length; i++) {
+                    bodies.item(i).style.display = "none";
+                }
+                document.getElementById("source-code" + num ).style.display = "block";
+            }
+        </script>
     </head>
 
     <body>
         <div id="mainDiv">
             <p class="mainHeading">WhichSource</p>
 
-            @defining(Html(resList.zipWithIndex.map(x => "<p class='function' id='func" + x._2 + "'>" + x._1._1 + "</p>").mkString(" "))) { stack =>
+            @defining(Html(resList.zipWithIndex.map(x => "<p class='traceLine' id='func" + x._2 + "' onclick='showSource(" + x._2 +")'>" + x._1._1 + "</p>").mkString(" "))) { stack =>
                 <div id="stackTrace"> @stack </div>
             }
 
-            @defining(Html(resList.zipWithIndex.map(x => "<p class='body' id='source" + x._2 + "'>" + x._1._2 + "</p>").mkString(" "))) { sources =>
+            @defining(Html(resList.zipWithIndex.map(x => "<div class='body' id='source-code" + x._2 + "'>" + x._1._2.mkString(" ") + "</div>").mkString(" "))) { sources =>
                 <div id="source" class="play-error-page"> @sources </div>
             }
         </div>
         <script>
-            document.onload = function() {
-                document.getElementsByClassName("body").forEach(function(elem, i, coll) {
-                    elem.setProperty("visibility", "hidden");
-                });
+           var f = function() {
+                var bodies = document.getElementsByClassName("body" );
+                for (var i = 0; i < bodies.length; i++) {
+                    bodies.item(i).style.display = "none";
+                }
             };
+            f();
         </script>
     </body>
 </html>

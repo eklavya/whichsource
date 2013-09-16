@@ -16,7 +16,7 @@ object Indexing {
   case class  YesIHaveIt(jarName: String, funcs: List[(String, Func)])
   case object NoIDont
   case class  SearchFuncs(cond: List[(String, String)])
-  case class  Func(name: String, start: Int, end: Int, body: Option[String])
+  case class  Func(name: String, start: Int, end: Int, err: Int, body: Option[String])
   case object DoneIndexing
   case object StillIndexing
 }
@@ -40,7 +40,7 @@ class Indexer(jarPath: String) extends Actor {
       val start = cu.getLineNumber(node.getStartPosition)
       val end   = start + cu.getLineNumber(node.getLength)
       val body  = Option(node.getBody).map(x => Some(x.toString)).getOrElse(None)
-      funcMap.addBinding(fqn + "." + node.getName.getFullyQualifiedName, Func(fqn + "." + node.getName.getFullyQualifiedName, start, end, body))
+      funcMap.addBinding(fqn + "." + node.getName.getFullyQualifiedName, Func(fqn + "." + node.getName.getFullyQualifiedName, start, end, 0, body))
       super.visit(node)
     }
   }
@@ -60,9 +60,9 @@ class Indexer(jarPath: String) extends Actor {
     if (holds) {
       val funcs = funcList map { case (f, l) =>
         val func = funcMap(f).filter(x => (l.toInt >= x.start) && (l.toInt <= x.end)).head
-        (f, func)
+        (f, Func(func.name, func.start, func.end, l.toInt, func.body))
       }
-      s ! YesIHaveIt(jarName.split('/').toList.last, funcs)
+      s ! YesIHaveIt(jarName.split('/').toList.last, funcs.toList)
     } else {
       s ! NoIDont
     }

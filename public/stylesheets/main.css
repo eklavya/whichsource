@@ -161,12 +161,19 @@ pre.error span.marker {
     width: 50%;
     display: inline-block;
     float: left;
+    overflow: auto;
+    background: white;
 }
 
 #source {
+    position: fixed;
     width: 50%;
-    height: 600px;
+    height: 400px;
     overflow: auto;
     display: inline-block;
     float: right;
+}
+
+.error {
+    color: red;
 }
