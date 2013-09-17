@@ -7,10 +7,12 @@ import akka.actor.Props
 class Manager(jarPath: String) extends Actor {
 
   var indexing = Set.empty[ActorRef]
+  var numJars: Int = _
 
   override def preStart = {
     //search in path and spawn indexers, one for each jar
     val dir = new java.io.File(jarPath).listFiles().filter(_.getName().contains(".jar"))
+    numJars = dir.length
     dir foreach { x: java.io.File =>
       context.actorOf(Props(new Indexer(x.getPath())))
     }
@@ -27,7 +29,7 @@ class Manager(jarPath: String) extends Actor {
       }
 
     case _ =>
-      sender ! StillIndexing
+      sender ! StillIndexing(numJars, indexing.size)
   }
 
   def afterIndexing: Receive = {

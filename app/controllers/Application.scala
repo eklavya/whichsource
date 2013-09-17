@@ -46,19 +46,18 @@ object Application extends Controller {
           Async {
             val resList = askAndAcc(askers)
             resList map { x: List[(String, Html)] =>
-              var s = Map.empty[String, List[Html]]
+              var fMap = Map.empty[String, List[Html]]
               x foreach { y =>
-                if (!s.contains(y._1)) s += (y._1 -> List[Html]())
-                s = s + (y._1 -> (s(y._1) :+ y._2))
+                if (!fMap.contains(y._1)) fMap += (y._1 -> List[Html]())
+                fMap = fMap + (y._1 -> (fMap(y._1) :+ y._2))
               }
-              Ok(views.html.results(s.toList))
+              processStack(t, fMap)
             }
           }
         }
       }
     )
   }
-
 
   def spawnAskers(t: String) = {
     val funcLines = t.split('\n').filter(_.contains("java:")).toList
@@ -93,4 +92,23 @@ object Application extends Controller {
     val names = Future.fold(futures)(List[(String, Html)]())((a, b) => a ++ b.asInstanceOf[List[(String, Html)]])
     names
   }
+
+  def processStack(trace: String, fMap: Map[String, List[Html]]) = {
+    if (fMap.keySet.head.contains("Indexing in progress, please try again later.")) {
+      Ok(views.html.results(fMap.toList, Html(fMap.keySet.head)))
+    } else {
+      val resl = fMap.toList
+      val h = Html(trace.split('\n').map { x =>
+        if(x.contains(".java:")) {
+          val i = resl.zipWithIndex.find(_._1._1 == x.split(' ').last.split('(').head).get._2
+          "<li><p class='traceLine' id='func" + i + "' onclick='showSource(" + i + ")'>" +
+          x  + "</p></li>"
+        } else {
+          x
+        }
+      }.mkString(" "))
+      Ok(views.html.results(resl, h))
+    }
+  }
+
 }

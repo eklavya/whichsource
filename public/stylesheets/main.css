@@ -8,6 +8,8 @@ body {
 	margin: 50px;
 	padding: 30px;
 	color: white;
+    font-family: 'quintessential';
+    font-size: 32pt;
 }
 
 .found {
@@ -30,17 +32,20 @@ body {
 #mainDiv {
 	margin: 0 auto;
 	min-width: 50%;
-	width: 80%;
+	width: 100%;
 }
 
 .mainHeading {
 	font-size: 32pt;
 	font-family: 'Quintessential';
 	text-align: center;
+    display: block;
+    color: black;
 }
 
 #traceDiv {
 	margin: 0 auto;
+    width: 80%;
 }
 
 #trace {
@@ -64,12 +69,6 @@ body {
 	font-family: 'Quintessential';
 }
 
-html, body, pre {
-    margin: 0;
-    padding: 0;
-    font-family: 'Consolas', 'Inconsolata', monospace;
-    background: #ECECEC;
-}
 h1 {
     margin: 0;
     background: #A31012;
@@ -162,12 +161,15 @@ pre.error span.marker {
     display: inline-block;
     float: left;
     overflow: auto;
+    text-justify: auto;
+    text-overflow: ellipsis;
     background: white;
 }
 
 #source {
     position: fixed;
-    width: 50%;
+    width: 40%;
+    margin: 5%;
     height: 400px;
     overflow: auto;
     display: inline-block;
@@ -176,4 +178,16 @@ pre.error span.marker {
 
 .error {
     color: red;
+}
+
+#stackTrace p {
+    text-decoration: none;
+}
+
+p:hover {
+    color: blue;
+}
+
+#stackTrace ul {
+  box-shadow: #2a2a2a inset 3px;
 }

@@ -14,11 +14,10 @@ import play.api.templates.Html
 
 object Indexing {
   case class  YesIHaveIt(jarName: String, funcs: List[(String, Func)])
-  case object NoIDont
   case class  SearchFuncs(cond: List[(String, String)])
   case class  Func(name: String, start: Int, end: Int, err: Int, body: Option[String])
   case object DoneIndexing
-  case object StillIndexing
+  case class StillIndexing(total: Int, left: Int)
 }
 
 class Indexer(jarPath: String) extends Actor {
@@ -63,8 +62,6 @@ class Indexer(jarPath: String) extends Actor {
         (f, Func(func.name, func.start, func.end, l.toInt, func.body))
       }
       s ! YesIHaveIt(jarName.split('/').toList.last, funcs.toList)
-    } else {
-      s ! NoIDont
     }
   }
 }
