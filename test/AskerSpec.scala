@@ -27,8 +27,6 @@ class AskerSpec extends TestKit(ActorSystem("AskerSpec")) with WordSpec with Mus
       implicit val timeout = Timeout(5.seconds)
       val i = TestActorRef[Asker]
       val ind = i.underlyingActor
-      ind.receive(YesIHaveIt("this should get added to the list."))
-      ind.jars.contains("this should get added to the list.") must be(true)
     }
   }
 }

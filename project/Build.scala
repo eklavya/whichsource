@@ -15,10 +15,12 @@ object ApplicationBuild extends Build {
 
 
   val main = play.Project(appName, appVersion, appDependencies).settings(
+    scalaVersion := "2.10.2",
     // Add your own project settings here 
     libraryDependencies ++= Seq("org.scalatest" % "scalatest_2.10" % "1.9.1" % "test",
-      "com.typesafe.akka" %% "akka-actor" % "2.2.0",
-      "com.typesafe.akka" %% "akka-testkit" % "2.2.0"
+      "com.typesafe.akka" %% "akka-actor" % "2.2.1",
+      "com.typesafe.akka" %% "akka-testkit" % "2.2.1",
+      "org.scala-lang" %% "scala-pickling" % "0.8.0-SNAPSHOT"
     )
   )
 
