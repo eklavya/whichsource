@@ -1,39 +1,68 @@
 package controllers
 
-import akka.actor. { Actor, ActorRef }
+import akka.actor.{ Actor, ActorRef }
+import scala.collection.mutable.{ HashMap, MultiMap, Set }
 import Indexing._
 import akka.actor.Props
+import scala.concurrent.future
+import scala.concurrent.ExecutionContext.Implicits.global
+import java.io.FileInputStream
+import java.io.FileOutputStream
+import java.io.ObjectInputStream
+import java.io.ObjectOutputStream
+import java.io.ByteArrayInputStream
+import java.io.ByteArrayOutputStream
+import java.io.FileWriter
+import java.io.FileNotFoundException
+import com.typesafe.config.ConfigFactory
+import java.nio.file._
+import java.nio.file.Files
+import java.nio.file.Path
+import models._
 
 class Manager(jarPath: String) extends Actor {
 
-  var indexing = Set.empty[ActorRef]
   var numJars: Int = _
+  val dir = new java.io.File(jarPath).listFiles().filter(_.getName().contains(".jar"))
+  val jarList = new java.io.File(ConfigFactory.load.getString("jarListBackup"))
 
   override def preStart = {
-    //search in path and spawn indexers, one for each jar
-    val dir = new java.io.File(jarPath).listFiles().filter(_.getName().contains(".jar"))
+    funcMap = FuncMap.load
     numJars = dir.length
-    dir foreach { x: java.io.File =>
-      context.actorOf(Props(new Indexer(x.getPath())))
-    }
-    context.children foreach (x => indexing += x)
-  }
-
-  def receive = beforeIndexing
-
-  def beforeIndexing: Receive = {
-    case DoneIndexing =>
-      indexing = indexing - sender
-      if (indexing.isEmpty) {
-        context.become(afterIndexing)
+    try {
+      val files = io.Source.fromFile(jarList).getLines
+      dir foreach { x: java.io.File =>
+        if (!files.contains(x.getName)) {
+          future((new Indexer(x.getPath, jarList, self)).index)
+        }
+        else {
+          numJars -= 1
+        }
       }
-
-    case _ =>
-      sender ! StillIndexing(numJars, indexing.size)
+    } catch {
+      case e: FileNotFoundException => 
+        dir foreach { x =>
+          future((new Indexer(x.getPath, jarList, self)).index)
+        }
+    }
   }
 
-  def afterIndexing: Receive = {
-    case SearchFuncs(conds) =>
-      context.children.foreach(_ forward SearchFuncs(conds))
+    def receive = {
+      case DoneIndexing => 
+        numJars -= 1
+        if (numJars == 0) {
+          val p = new FileWriter(jarList)
+          
+          val jars = dir.map(_.getName).mkString("\n")
+          
+          try {
+            p.write(jars)
+          } finally {
+            p.close
+          }
+
+          funcMap.store
+          context.stop(self)
+        }
+    }
   }
-}

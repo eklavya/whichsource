@@ -13,6 +13,12 @@ import akka.pattern.ask
 import controllers._
 import akka.util.Timeout
 
+class TestActor extends Actor {
+  def receive = {
+    case x => println("got this message " + x.toString)
+  }
+}
+
 class IndexerSpec extends TestKit(ActorSystem("IndexerSpec")) with WordSpec with MustMatchers with BeforeAndAfterAll {
 
   override def afterAll() {
@@ -25,11 +31,14 @@ class IndexerSpec extends TestKit(ActorSystem("IndexerSpec")) with WordSpec with
 
     "have these functions" in {
       implicit val timeout = Timeout(5.seconds)
-      val i = TestActorRef(new Indexer("/home/eklavya/Downloads/jars/hibernate-3.2.0.ga-sources.jar"))
+      val actsys = ActorSystem("Test")
+      val act = actsys.actorOf(Props[TestActor])
+      val file = new java.io.File("/home/eklavya/test123")
+      val i = actsys.actorOf(Props(new Indexer("/home/eklavya/Downloads/jars/hibernate-3.2.0.ga-sources.jar", file, act)))
       val f = i ? SearchFuncs(getFuncs)
-      val r = f.mapTo[YesIHaveIt].value.get.get
+      // val r = f.mapTo[YesIHaveIt].value.get.get
 
-      r.jarName must be("/home/eklavya/Downloads/jars/hibernate-3.2.0.ga-sources.jar")
+      // r.jarName must be("/home/eklavya/Downloads/jars/hibernate-3.2.0.ga-sources.jar")
     }
 
     "not have these functions" in {
