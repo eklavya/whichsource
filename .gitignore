@@ -15,4 +15,4 @@ dist
 /.settings
 backup/*
 jars/*
-
+*.class
