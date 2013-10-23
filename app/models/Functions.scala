@@ -1,4 +1,5 @@
 package models
+
 import scala.collection.mutable.{ HashMap, MultiMap, Set }
 import java.io.FileInputStream
 import java.io.FileOutputStream
@@ -6,6 +7,35 @@ import java.io.ObjectInputStream
 import java.io.ObjectOutputStream
 import com.typesafe.config.ConfigFactory
 import java.io.FileNotFoundException
+
+
+object Functions {
+	var funcMap: FuncMap = _
+
+	def load = {
+     funcMap = FuncMap.load 
+	}
+	
+	def add(fqn: String, f: Func) = {
+		funcMap.addBinding(fqn, f)
+	}
+
+	def holds(conds: List[(String, String)]) = {
+		!conds.exists{case(f, l) => !funcMap.entryExists(f, x => (l.toInt >= x.start) && (l.toInt <= x.end))}
+	}
+
+	def findFunc(f: String, l: Int) = {
+		funcMap(f).filter(x => (l.toInt >= x.start) && (l.toInt <= x.end)).toList
+	}
+
+	def getFunc(f: String, jarName: String) = {
+		funcMap.get(f).map(x => x.filter(_.jarName == jarName).head)
+	}
+
+	def store {
+		funcMap.store
+	}
+}
 
 class FuncMap extends HashMap[String, Set[Func]] with MultiMap[String, Func] with Serializable {
 	
@@ -61,3 +91,4 @@ object FuncMap {
 		} 
 	}
 }
+

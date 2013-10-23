@@ -23,6 +23,7 @@ class ManagerSpec extends TestKit(ActorSystem("ManagerSpec")) with WordSpec with
     "spawn indexers for jars" in {
       val m = TestActorRef(new Manager("/home/eklavya/Downloads/jars"))
       val sel = system.actorSelection(m.path + "/*")
+//      sel.
     }
   }
 }
