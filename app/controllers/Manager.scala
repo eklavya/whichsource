@@ -2,7 +2,6 @@ package controllers
 
 import akka.actor.{ Actor, ActorRef }
 import scala.collection.mutable.{ HashMap, MultiMap, Set }
-import Indexing._
 import akka.actor.Props
 import scala.concurrent.future
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -19,6 +18,7 @@ import java.nio.file._
 import java.nio.file.Files
 import java.nio.file.Path
 import models._
+import Indexing._
 
 class Manager(jarPath: String) extends Actor {
 
@@ -27,42 +27,31 @@ class Manager(jarPath: String) extends Actor {
   val jarList = new java.io.File(ConfigFactory.load.getString("jarListBackup"))
 
   override def preStart = {
-    funcMap = FuncMap.load
+    Functions.load
     numJars = dir.length
     try {
       val files = io.Source.fromFile(jarList).getLines
       dir foreach { x: java.io.File =>
         if (!files.contains(x.getName)) {
           future((new Indexer(x.getPath, jarList, self)).index)
-        }
-        else {
+        } else {
           numJars -= 1
         }
       }
     } catch {
-      case e: FileNotFoundException => 
+      case e: FileNotFoundException =>
         dir foreach { x =>
           future((new Indexer(x.getPath, jarList, self)).index)
         }
     }
   }
 
-    def receive = {
-      case DoneIndexing => 
-        numJars -= 1
-        if (numJars == 0) {
-          val p = new FileWriter(jarList)
-          
-          val jars = dir.map(_.getName).mkString("\n")
-          
-          try {
-            p.write(jars)
-          } finally {
-            p.close
-          }
-
-          funcMap.store
-          context.stop(self)
-        }
-    }
+  def receive = {
+    case DoneIndexing =>
+      numJars -= 1
+      if (numJars == 0) {
+        Functions.store
+        context.stop(self)
+      }
   }
+}

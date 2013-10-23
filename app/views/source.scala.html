@@ -2,6 +2,6 @@
         <h2>In @jarString at line @err</h2>
 
         @for(i <- 0 until source.length) {
-            <pre><span class="line">@(start + i)</span><span class="code">@if(start + i == err){<span class="error">}@source.drop(i).head@if(start + i == err){</span>}</span></pre>
+            <pre><span class="line">@(start + i)</span><span class="code">@if(start + i == err){<span class="error">}@Html(source.drop(i).head)@if(start + i == err){</span>}</span></pre>
         }
 

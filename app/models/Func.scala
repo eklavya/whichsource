@@ -1,6 +1,7 @@
 package models
 
 class Func(val name: String, val start: Int, val end: Int, val body: Option[String], val jarName: String) extends Serializable {
+
 	def toList = {
 		List(name, start.toString, end.toString, body.map(x => x).getOrElse("empty"), jarName)
 	}
