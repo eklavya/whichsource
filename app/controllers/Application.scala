@@ -45,14 +45,8 @@ object Application extends Controller {
           //           {
           val resMap = askAndAcc(askers)
           resMap map { x: Map[String, List[Html]] =>
-            //              var fMap = Map.empty[String, List[Html]]
-            //              x foreach { y =>
-            //                if (!fMap.contains(y._1)) fMap += (y._1 -> List[Html]())
-            //                fMap = fMap + (y._1 -> (fMap(y._1) :+ y._2))
-            //              }
             processStack(t, x)
           }
-          //          }
         }
       })
   }
@@ -95,29 +89,35 @@ object Application extends Controller {
   }
 
   def processStack(trace: String, fMap: Map[String, List[Html]]) = {
-    //    if (fMap.keySet.head.contains("Indexing in progress, please try again later.")) {
-    //      Ok(views.html.results(fMap.toList, Html(fMap.keySet.head)))
-    //    } else {
     val resl = fMap.toList
     val h = Html(trace.split('\n').map { x =>
       if (x.contains(".java:")) {
         val i = resl.zipWithIndex.find(_._1._1 == x.split(' ').last.split('(').head).get._2
-        "<li><p class='traceLine' id='func" + i + "' onclick='showSource(" + i + ")'>" +
-          x + "</p></li>"
+        "<li><p title='" + x + "' class='traceLine' id='func" + i + "' onclick='showSource(" + i + ")'>" +
+          shortHand(x) + "</p></li>"
       } else {
         x
       }
     }.mkString(" "))
     Ok(views.html.results(resl, h))
-    //    }
+  }
+
+  def shortHand(s: String): String = {
+    val list = s.split('.').zipWithIndex
+    list.map { x =>
+      if (x._2 > 4 && x._2 < (list.size - 3)) "."
+      else if (x._2 < (list.size - 3))        "" + x._1.head
+      else                                    x._1
+    }.mkString(".")
   }
 
   def getFunc(f: String) = Action {
     val fName = f.split('&')(0)
     val jarName = f.split('&')(1)
     Functions.getFunc(fName, jarName).map { func =>
-      Ok(views.html.source(func.jarName)(func.body.map(_.split('\n').toList).getOrElse(List("")))(func.start)(0))
-    }.getOrElse(Ok("This function is not available."))
+      Ok(views.html.function(func.map{ f =>
+        views.html.source.render(f.jarName + " inside " + f.name.split('.').dropRight(1).last +".java ", f.body.map(g => g.split('\n').toList).getOrElse(List()), f.start, 0)
+        }.toList, Html("<p class='traceLine'>" + fName + "</p>")))
+    }.getOrElse(Ok(views.html.function(List(Html("This function is not available.")), Html("<p>" + fName + "</p>"))))
   }
-
 }

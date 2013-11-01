@@ -167,10 +167,8 @@ pre.error span.marker {
 }
 
 #source {
-    position: fixed;
-    width: 40%;
-    margin: 5%;
-    height: 400px;
+    width: 100%;
+    height: auto;
     overflow: auto;
     display: inline-block;
     float: right;
@@ -190,4 +188,16 @@ p:hover {
 
 #stackTrace ul {
   box-shadow: #2a2a2a inset 3px;
+}
+
+.traceLine {
+  word-wrap: break-word;
+}
+
+span.code {
+    overflow: auto;
+}
+
+span {
+    overflow: show;
 }

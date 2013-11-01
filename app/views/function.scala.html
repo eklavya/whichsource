@@ -1,4 +1,4 @@
-@(resList: List[(String, List[Html])], h: Html)
+@(resList: List[Html], h: Html)
 <!DOCTYPE html>
 <html>
 <title>Which Source
@@ -12,15 +12,6 @@
     <link href='http://fonts.googleapis.com/css?family=Inconsolata:400' rel='stylesheet' type='text/css'>
     <link href='http://fonts.googleapis.com/css?family=Inconsolata:400' rel='stylesheet' type='text/css'>
     <link href='http://fonts.googleapis.com/css?family=Quintessential' rel='stylesheet' type='text/css'>
-    <script type="text/javascript">
-        function showSource(num) {
-        var bodies = document.getElementsByClassName("body" );
-        for (var i = 0; i < bodies.length; i++) {
-        bodies.item(i).style.display = "none";
-        }
-        document.getElementById("source-code" + num ).style.display = "block";
-        }
-    </script>
 
 </head>
 
@@ -61,8 +52,8 @@
 <div>
     <div id ="directory"> @h
         <!--<ul class="selectiontabs">-->
-            <!--<INPUT TYPE="image" class="list" SRC="@routes.Assets.at("images/list.png")" onclick="alert('...')" />-->
-            <!--<INPUT TYPE="image" class="folder" SRC="@routes.Assets.at("images/folder.png")" onclick="alert('...')">-->
+        <!--<INPUT TYPE="image" class="list" SRC="@routes.Assets.at("images/list.png")" onclick="alert('...')" />-->
+        <!--<INPUT TYPE="image" class="folder" SRC="@routes.Assets.at("images/folder.png")" onclick="alert('...')">-->
         <!--</ul>-->
 
         <div>
@@ -73,20 +64,11 @@
 
     </div>
     <div id ="details">
-        @defining(Html(resList.zipWithIndex.map(x => "<div class='body' id='source-code" + x._2 + "'>" + x._1._2.mkString(" ") + "</div>").mkString(" "))) { sources =>
+        @defining(Html(resList.map(x => "<div class='body'>" + x + "</div>").mkString(" "))) { sources =>
         <div id="source" class="play-error-page"> @sources </div>
         }
     </div>
 </div>
-<script>
-    var f = function() {
-    var bodies = document.getElementsByClassName("body" );
-    for (var i = 0; i < bodies.length; i++) {
-    bodies.item(i).style.display = "none";
-    }
-    };
-    f();
-</script>
 
 </body>
 </html>

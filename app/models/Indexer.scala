@@ -39,7 +39,10 @@ class Indexer(jarPath: String, f: File, manager: ActorRef) {
   }
 
   def addFunc(fName: String, f: Func) {
-    Functions.add(fName, f)
+    Functions.getFunc(fName, f.jarName) match {
+      case Some(x) => if (x.isEmpty) Functions.add(fName, f)
+      case None => Functions.add(fName, f)
+    }
   }
 
   class MethodVisitor(cu: CompilationUnit, fqn: String) extends ASTVisitor {
@@ -59,13 +62,10 @@ class Indexer(jarPath: String, f: File, manager: ActorRef) {
           var body = node.toString
           invokeMap foreach {
             case (k, v) =>
-              // println(k + " -> " + v)
-              // val K = k + "("
               body = body.replaceAll(k + """\(""", "<a href='/func/" + v + "&" + jarName.split('/').toList.last + "'>" + k + "</a>(")
           }
-          // invokeMap foreach { case (k, v) => println(k + " -> " + v) }
-          // println(body)
           Some(body)
+
         case None => None
       }
 
@@ -74,9 +74,7 @@ class Indexer(jarPath: String, f: File, manager: ActorRef) {
     class MethodInvocationVisitor(invokeMap: scala.collection.mutable.Map[String, String]) extends ASTVisitor {
       override def visit(node: MethodInvocation) = {
         val name = node.getName.getFullyQualifiedName
-        // println("visiting " + name)
         invokeMap += (name -> Option(node.resolveMethodBinding()).map { x =>
-          // println(x.getDeclaringClass.getPackage + "." + x.getDeclaringClass.getName + "." + name)
           x.getDeclaringClass.getPackage.getName + "." + x.getDeclaringClass.getName + "." + name
         }.getOrElse(""))
         super.visit(node)
