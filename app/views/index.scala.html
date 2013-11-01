@@ -1,11 +1,85 @@
 @(message: String)
 @import helper._
-@main("Welcome to Play 2.1") {
+<!--@main("WhichSource") {-->
 
-	<div id="traceDiv">
-		@form(action = routes.Application.sourceFinder()) {
-			<textarea name="trace" id="trace" placeholder="Paste your stacktrace here."></textarea>
-			<input name="submit" id="submit" type="submit" value="Post" />
-		}
-	</div>
-}
+	<!--<div id="traceDiv">-->
+		<!--@form(action = routes.Application.sourceFinder()) {-->
+			<!--<textarea name="trace" id="trace" placeholder="Paste your stacktrace here."></textarea>-->
+			<!--<input name="submit" id="submit" type="submit" value="Post" />-->
+		<!--}-->
+	<!--</div>-->
+<!--}-->
+
+<html>
+<title>Which Source
+</title>
+<head>
+    <link rel="stylesheet" media="screen" href="@routes.Assets.at("stylesheets/stylesheet.css")">
+    <link rel="stylesheet" media="screen" href="@routes.Assets.at("stylesheets/main.css")">
+    <link rel="shortcut icon" type="image/png" href="@routes.Assets.at("images/favicon.png")">
+    <script src="@routes.Assets.at("javascripts/jquery-1.9.0.min.js")" type="text/javascript"></script>
+    <script src="@routes.Assets.at("javascripts/script_whichsource.js")" type="text/javascript"></script>
+    <link href='http://fonts.googleapis.com/css?family=Inconsolata:400' rel='stylesheet' type='text/css'>
+    <link href='http://fonts.googleapis.com/css?family=Inconsolata:400' rel='stylesheet' type='text/css'>
+    <link href='http://fonts.googleapis.com/css?family=Quintessential' rel='stylesheet' type='text/css'>
+</head>
+
+<body>
+
+<div id="top">
+    <div>
+        <div class="insidediv">WHICH <a id="sourcered">SOURCE</a> does </div><input type="text" class="inputbox" name="FirstName" value="..." ><img class = "searchicon"src="@routes.Assets.at("images/search.png")"></input>
+        belong to
+        <button id='Mbutton' type="button" class="more" onclick="moreclick(this)">more...</button>
+    </div>
+
+    <img class="logotop" src="@routes.Assets.at("images/logo.png")">
+
+    <div class="findmethod">
+        <div class="insidediv">FIND <a id="sourcered">Methods</a> that use </div><input type="text" class="inputbox" name="FirstName" value="..." ><img class = "searchicon"src="@routes.Assets.at("images/search.png")"></input>
+        ...
+    </div>
+
+    <div class="findmethod">
+        <div class="insidediv">Question <a id="sourcered">#3</a> does </div><input type="text" class="inputbox" name="FirstName" value="..." ><img class = "searchicon"src="@routes.Assets.at("images/search.png")"></input>
+        goes...
+    </div>
+    <div class="findmethod">
+        <div class="insidediv">Question <a id="sourcered">#4</a> does </div><input type="text" class="inputbox" name="FirstName" value="..." ><img class = "searchicon"src="@routes.Assets.at("images/search.png")"></input>
+        goes...
+    </div>
+    <div class="findmethod">
+        <div class="insidediv">Question <a id="sourcered">#5</a> does </div><input type="text" class="inputbox" name="FirstName" value="..." ><img class = "searchicon"src="@routes.Assets.at("images/search.png")"></input>
+        goes...
+        <button id='lbutton' type="button" class="more" onclick="lessclick(this)">less...</button>
+    </div>
+
+
+</div>
+
+
+<div>
+    <div id ="directory"> Paste a new trace.
+        <ul class="selectiontabs">
+            <!--<INPUT TYPE="image" class="list" SRC="@routes.Assets.at("images/list.png")" onclick="alert('...')" />-->
+            <!--<INPUT TYPE="image" class="folder" SRC="@routes.Assets.at("images/folder.png")" onclick="alert('...')">-->
+        </ul>
+
+        <div>
+        </div>
+
+        <div>
+        </div>
+
+    </div>
+    <div id ="details">
+        @form(action = routes.Application.sourceFinder()) {
+            <textarea name="trace" id="trace" placeholder="Paste your stacktrace here."></textarea>
+            <input name="submit" id="submit" type="submit" value="Post" />
+        }
+    </div>
+</div>
+
+
+</body>
+</html>

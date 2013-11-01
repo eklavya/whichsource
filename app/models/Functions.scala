@@ -20,16 +20,16 @@ object Functions {
 		funcMap.addBinding(fqn, f)
 	}
 
-	def holds(conds: List[(String, String)]) = {
+	def holds(conds: List[(String, String)]): Boolean = {
 		!conds.exists{case(f, l) => !funcMap.entryExists(f, x => (l.toInt >= x.start) && (l.toInt <= x.end))}
 	}
 
-	def findFunc(f: String, l: Int) = {
+	def findFunc(f: String, l: Int): List[Func] = {
 		funcMap(f).filter(x => (l.toInt >= x.start) && (l.toInt <= x.end)).toList
 	}
 
-	def getFunc(f: String, jarName: String) = {
-		funcMap.get(f).map(x => x.filter(_.jarName == jarName).head)
+	def getFunc(f: String, jarName: String): Option[List[Func]] = {
+    funcMap.get(f).map(x => x.filter(_.jarName == jarName).toList)
 	}
 
 	def store {
@@ -87,8 +87,7 @@ object FuncMap {
 		  deMap(m)
 		} catch {
 		  case e: FileNotFoundException => new FuncMap
-		  // case e: NoSuchFileException => println("exception thrown")
-		} 
+		}
 	}
 }
 
