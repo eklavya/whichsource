@@ -1,18 +1,14 @@
 package test
 
-import akka.actor.{ Props, Actor, ActorSystem, ActorRef }
-import akka.testkit.{ TestKit, TestActorRef, ImplicitSender }
+import akka.actor.{ Actor, ActorSystem, ActorRef }
+import akka.testkit.TestKit
 import org.scalatest.{ WordSpec, BeforeAndAfterAll }
 import org.scalatest.matchers.MustMatchers
-import collection.JavaConversions._
-import akka.pattern.ask
 import akka.testkit.TestActorRef
 import scala.concurrent.duration._
-import scala.concurrent.Await
-import akka.pattern.ask
-import controllers._
+import org.specs2.mock._
 import akka.util.Timeout
-import DataProvider._
+import models.IndexerService
 import models._
 import Indexing._
 import DataProvider._
@@ -25,10 +21,16 @@ class TestActor extends Actor {
   }
 }
 
-class TestIndexer(jarPath: String, f: java.io.File, manager: ActorRef) extends Indexer(jarPath, f, manager) {
-  override def addFunc(fName: String, f: Func) {
+object TestIndexer extends IndexerService {
+  def addFunc(fName: String, f: Func) {
     TestFunctions.add(fName, f)
   }
+
+  def persistIndex = ()
+
+  override private val indexer =
+
+
 }
 
 class IndexerSpec extends TestKit(ActorSystem("IndexerSpec")) with WordSpec with MustMatchers with BeforeAndAfterAll {
@@ -47,13 +49,13 @@ class IndexerSpec extends TestKit(ActorSystem("IndexerSpec")) with WordSpec with
     TestFunctions.load
     act = TestActorRef[TestActor]
     undAct = act.asInstanceOf[TestActorRef[TestActor]].underlyingActor
-    jarFile = new java.io.File("testJars")
-    indexer = new TestIndexer("test/hibernate-3.2.0.ga-sources.jar", jarFile, act)
     indexer.index
   }
 
   "Indexer" should {
 
+    jarFile = new java.io.File("test/testJars")
+    indexer = new TestIndexer("test/hibernate-3.2.0.ga-sources.jar", jarFile, act)
 
     "index functions" in {
       val res = TestFunctions.findFunc("org.hibernate.action.BulkOperationCleanupAction.init", 101)

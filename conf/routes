@@ -9,3 +9,4 @@ GET     /                           controllers.Application.index
 GET     /assets/*file               controllers.Assets.at(path="/public", file)
 POST    /trace                      controllers.Application.sourceFinder
 GET     /func/:f                    controllers.Application.getFunc(f: String)
+POST    /jar                        controllers.Application.uploadJar

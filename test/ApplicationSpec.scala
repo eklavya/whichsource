@@ -5,7 +5,6 @@ import org.scalatest.matchers._
 
 import play.api.test._
 import play.api.test.Helpers._
-import scala.concurrent.Await
 
 class ApplicationSpec extends WordSpec with MustMatchers {
 

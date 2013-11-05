@@ -1,6 +1,5 @@
 package controllers
 
-import play.api._
 import play.api.mvc._
 import akka.actor.Props
 import akka.actor.ActorRef
@@ -14,8 +13,8 @@ import scala.concurrent.duration._
 import scala.concurrent._
 import play.api.libs.concurrent.Execution.Implicits._
 import models.Indexing._
-import akka.pattern.AskTimeoutException
 import play.api.templates.Html
+import java.io._
 import models._
 
 object Application extends Controller {
@@ -119,5 +118,17 @@ object Application extends Controller {
         views.html.source.render(f.jarName + " inside " + f.name.split('.').dropRight(1).last +".java ", f.body.map(g => g.split('\n').toList).getOrElse(List()), f.start, 0)
         }.toList, Html("<p class='traceLine'>" + fName + "</p>")))
     }.getOrElse(Ok(views.html.function(List(Html("This function is not available.")), Html("<p>" + fName + "</p>"))))
+  }
+
+  def uploadJar = Action(parse.multipartFormData) { request =>
+    request.body.file("jar").map { jar =>
+      val filename = jar.filename
+      jar.ref.moveTo(new File(s"jars/$filename"))
+      MapIndexer.index(s"jars/$filename")
+      Ok("Jar uploaded")
+    }.getOrElse {
+      Redirect(routes.Application.index).flashing(
+        "error" -> "Missing file")
+    }
   }
 }

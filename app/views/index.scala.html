@@ -10,7 +10,7 @@
 	<!--</div>-->
 <!--}-->
 
-<html>
+<html xmlns="http://www.w3.org/1999/html" xmlns="http://www.w3.org/1999/html">
 <title>Which Source
 </title>
 <head>
@@ -22,6 +22,26 @@
     <link href='http://fonts.googleapis.com/css?family=Inconsolata:400' rel='stylesheet' type='text/css'>
     <link href='http://fonts.googleapis.com/css?family=Inconsolata:400' rel='stylesheet' type='text/css'>
     <link href='http://fonts.googleapis.com/css?family=Quintessential' rel='stylesheet' type='text/css'>
+    <script type="text/javascript">
+        function uploadJars() {
+            var files = document.getElementById("files");
+            var step = 100 / files.files.length;
+            var progress = document.getElementById("progress");
+
+            for(var i = 0; i < files.files.length; i++) {
+                var oData = new FormData();
+                oData.append("jar", files.files[i]);
+                var oReq = new XMLHttpRequest();
+                 oReq.open("POST", "/jar", true);
+                 oReq.onload = function(oEvent) {
+                   if (oReq.status == 200) {
+                     $("#progress").css({width: step * (i + 1) + "%"});
+                   }
+                 };
+                oReq.send(oData);
+            }
+        }
+    </script>
 </head>
 
 <body>
@@ -31,6 +51,13 @@
         <div class="insidediv">WHICH <a id="sourcered">SOURCE</a> does </div><input type="text" class="inputbox" name="FirstName" value="..." ><img class = "searchicon"src="@routes.Assets.at("images/search.png")"></input>
         belong to
         <button id='Mbutton' type="button" class="more" onclick="moreclick(this)">more...</button>
+        <div id="uploadDiv">
+            <input type="file" name="files" id="files" multiple />
+            <input type="button" name="upload" id="upload" onclick="uploadJars()" value="Upload Jars"/>
+            <div class="progress progress-success progress-striped">
+                <div id="progress" class="bar"></div>
+            </div>
+        </div>
     </div>
 
     <img class="logotop" src="@routes.Assets.at("images/logo.png")">
