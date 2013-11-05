@@ -1,11 +1,7 @@
 package controllers
 
-import akka.actor.{ Cancellable, Actor, ActorRef }
+import akka.actor.Actor
 import models.Indexing._
-import scala.concurrent.duration._
-import com.typesafe.config.ConfigFactory
-import play.api.libs.concurrent.Execution.Implicits._
-import play.api.templates.Html
 import models._
 
 class Asker extends Actor {

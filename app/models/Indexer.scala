@@ -1,31 +1,63 @@
 package models
 
 import akka.actor._
-import scala.collection.mutable.{ HashMap, MultiMap, Set }
 import collection.JavaConversions._
+import scala.concurrent._
+import ExecutionContext.Implicits.global
 import java.util.jar.JarFile
-import java.util.jar.JarEntry
-import java.io.InputStream
+import java.io.{File, InputStream, FileWriter, FileNotFoundException}
+
 import Indexing._
-import java.io.File
 import org.eclipse.jdt.core.dom._
 import scala.io.Codec
 import play.api.templates.Html
-import java.io.PrintWriter
-import models._
+import com.typesafe.config.ConfigFactory
+import scala.concurrent._
+import scala.Some
+import play.libs.Akka
 
 object Indexing {
   case class GotIt(funcs: Map[String, List[Html]])
   case class SearchFuncs(cond: List[(String, String)])
-  case object DoneIndexing
+  case class DoneIndexing(jarPath: String)
   case class NotIt(fl: List[String])
-  case class StillIndexing(total: Int, left: Int)
+  case class Index(jarPath: String)
 }
 
-class Indexer(jarPath: String, f: File, manager: ActorRef) {
-  val jarName = jarPath
+trait IndexerService {
 
-  def extractMethods(fName: String, is: InputStream) {
+  private val jarDir      = ConfigFactory.load.getString("repoPath")
+  private val jars        = new java.io.File(jarDir).listFiles().filter(_.getName().contains(".jar"))
+  private var jarsToIndex = jars.length
+  private val cachedJars  = new java.io.File(ConfigFactory.load.getString("jarListBackup"))
+
+  private val indexer     = Akka.system.actorOf(Props(new Actor {
+    def receive = {
+      case DoneIndexing(jarPath) =>
+        jarsToIndex -= 1
+        indexingFinished(jarPath)
+        if (jarsToIndex == 0) {
+          persistIndex
+        }
+
+      case Index(jarPath: String) =>
+        future(index(jarPath))
+    }
+  }), "indexer")
+
+  def addFunc(fName: String, f: Func): Unit
+
+  def persistIndex: Unit
+
+  def index(jarPath: String) {
+    val jarFile = new JarFile(jarPath)
+    jarFile.entries.filter(_.getName.contains(".java")) foreach { x =>
+      extractMethods(x.getName, jarFile.getInputStream(x), jarPath)
+    }
+    indexer ! DoneIndexing(jarPath)
+  }
+
+  def extractMethods(fName: String, is: InputStream, jarPath: String) {
     val parser = ASTParser.newParser(AST.JLS4)
     // or use codec "latin1" !!!important
     parser.setSource(io.Source.fromInputStream(is)(Codec.ISO8859).toSeq.toArray)
@@ -35,17 +67,11 @@ class Indexer(jarPath: String, f: File, manager: ActorRef) {
     parser.setResolveBindings(true)
     val cu = parser.createAST(null).asInstanceOf[CompilationUnit]
     val fqn = cu.getPackage.getName + "." + fName.split('/').last.split('.').head
-    cu.accept(new MethodVisitor(cu, fqn))
+    cu.accept(new MethodVisitor(cu, fqn, jarPath))
   }
 
-  def addFunc(fName: String, f: Func) {
-    Functions.getFunc(fName, f.jarName) match {
-      case Some(x) => if (x.isEmpty) Functions.add(fName, f)
-      case None => Functions.add(fName, f)
-    }
-  }
 
-  class MethodVisitor(cu: CompilationUnit, fqn: String) extends ASTVisitor {
+  class MethodVisitor(cu: CompilationUnit, fqn: String, jarName: String) extends ASTVisitor {
     override def visit(node: MethodDeclaration) = {
       val start = cu.getLineNumber(node.getStartPosition)
       val end = start + cu.getLineNumber(node.getLength)
@@ -82,14 +108,51 @@ class Indexer(jarPath: String, f: File, manager: ActorRef) {
     }
   }
 
-  def index {
-    val jarFile = new JarFile(jarPath)
-    jarFile.entries.filter(_.getName.contains(".java")) foreach { x =>
-      extractMethods(x.getName, jarFile.getInputStream(x))
+
+  def indexingFinished(jar: String) {
+    val fw = new FileWriter(new File(ConfigFactory.load.getString("jarListBackup")), true)
+    try {
+      fw.append(jar + "\n")
+      fw.flush()
+    } finally {
+      fw.close()
     }
-    val a = new PrintWriter(f)
-    try { a.write(jarPath) } finally { a.close() }
-    manager ! DoneIndexing
   }
+
 }
 
+object MapIndexer extends IndexerService {
+  private val jarDir           = ConfigFactory.load.getString("repoPath")
+  private val jars             = new java.io.File(jarDir).listFiles().filter(_.getName().contains(".jar"))
+  private var jarsToIndex: Int = jars.length
+  private val cachedJars       = new java.io.File(ConfigFactory.load.getString("jarListBackup"))
+
+  def addFunc(fName: String, f: Func) {
+    Functions.getFunc(fName, f.jarName) match {
+      case Some(x) => if (x.isEmpty) Functions.add(fName, f)
+      case None => Functions.add(fName, f)
+    }
+  }
+
+  def persistIndex {
+    Functions.store
+  }
+
+  def init {
+    Functions.load
+    try {
+      val files = io.Source.fromFile(cachedJars).getLines
+      jars foreach { x: java.io.File =>
+        if (!files.contains(x.getName)) {
+          future((index(x.getPath)))
+        } else {
+          jarsToIndex -= 1
+          indexingFinished(x.getPath)
+        }
+      }
+    } catch {
+      case e: FileNotFoundException =>
+        jars foreach(x => future((index(x.getPath))))
+    }
+  }
+}

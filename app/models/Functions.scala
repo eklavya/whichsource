@@ -10,7 +10,7 @@ import java.io.FileNotFoundException
 
 
 object Functions {
-	var funcMap: FuncMap = _
+	private var funcMap: FuncMap = _
 
 	def load = {
      funcMap = FuncMap.load 

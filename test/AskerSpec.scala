@@ -1,20 +1,16 @@
 package test
 
-import akka.actor.{Props, Actor, ActorSystem}
-import akka.testkit.{TestKit, TestActorRef, ImplicitSender}
+import akka.actor.ActorSystem
+import akka.testkit.TestKit
 import org.scalatest.{WordSpec, BeforeAndAfterAll}
 import org.scalatest.matchers.MustMatchers
-import collection.JavaConversions._
-import akka.pattern.ask
 import akka.testkit.TestActorRef
 import scala.concurrent.duration._
-import scala.concurrent.Await
 import akka.pattern.ask
 import controllers._
 import models._
 import akka.util.Timeout
 import Indexing._
-import play.api.templates.Html
 import DataProvider._
 
 class TestAsker extends Asker {
