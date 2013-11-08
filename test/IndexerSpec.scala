@@ -4,10 +4,7 @@ import akka.actor.ActorSystem
 import akka.testkit.TestKit
 import org.scalatest.{ WordSpec, BeforeAndAfterAll }
 import org.scalatest.matchers.MustMatchers
-import scala.concurrent.duration._
-import akka.util.Timeout
 import models._
-import DataProvider._
 import play.api.test._
 
 object TestIndexer extends IndexerService {
@@ -26,13 +23,13 @@ object TestIndexer extends IndexerService {
 class IndexerSpec extends TestKit(ActorSystem("IndexerSpec")) with WordSpec with MustMatchers with BeforeAndAfterAll {
 
   override def afterAll() {
+    val testJars = new java.io.File("test/testJars")
+    if (testJars.exists) testJars.delete
     system.shutdown()
   }
 
   override def beforeAll() {
     TestFunctions.load
-    val testJars = new java.io.File("test/testJars")
-    if (testJars.exists) testJars.delete
   }
 
   "Indexer" should {
