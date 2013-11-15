@@ -30,24 +30,24 @@ object Application extends Controller {
   }
 
   def sourceFinder = Action.async { implicit request =>
-
     traceForm.bindFromRequest().fold(
       errors => Future(BadRequest("Not a valid stacktrace.")),
       trace => {
         val (t, _) = trace
-
-        val askers = spawnAskers(t)
-
-        if (askers.isEmpty) {
-          Future(BadRequest("Not a valid stacktrace."))
-        } else {
-          //           {
-          val resMap = askAndAcc(askers)
-          resMap map { x: Map[String, List[Html]] =>
-            processStack(t, x)
-          }
-        }
+        gatherTraceInfo(t)
       })
+  }
+
+  def gatherTraceInfo(trace: String): Future[SimpleResult] = {
+    val askers = spawnAskers(trace)
+    if (askers.isEmpty) {
+      Future(BadRequest("Not a valid stacktrace."))
+    } else {
+      val resMap = askAndAcc(askers)
+      resMap map { x: Map[String, List[Html]] =>
+        processStack(trace, x)
+      }
+    }
   }
 
   def spawnAskers(t: String) = {

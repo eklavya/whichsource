@@ -86,7 +86,7 @@
 
 
 <div>
-    <div id ="directory"> Paste a new trace.
+    <div id ="directory">
         <ul class="selectiontabs">
             <!--<INPUT TYPE="image" class="list" SRC="@routes.Assets.at("images/list.png")" onclick="alert('...')" />-->
             <!--<INPUT TYPE="image" class="folder" SRC="@routes.Assets.at("images/folder.png")" onclick="alert('...')">-->
@@ -99,6 +99,7 @@
         </div>
 
     </div>
+    <div id="crumbs"></div>
     <div id ="details">
         @form(action = routes.Application.sourceFinder()) {
             <textarea name="trace" id="trace" placeholder="Paste your stacktrace here."></textarea>

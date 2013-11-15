@@ -11,7 +11,6 @@ import controllers._
 import models._
 import akka.util.Timeout
 import Indexing._
-import DataProvider._
 
 class TestAsker extends Asker {
   override def condHolds(conds: List[(String, String)]) = TestFunctions.holds(conds)

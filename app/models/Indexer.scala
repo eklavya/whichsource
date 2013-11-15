@@ -24,19 +24,35 @@ object Indexing {
   case class Index(jarPath: String)
 }
 
+class Ind extends Actor {
+  def receive = {
+    case x => val fw = new FileWriter(new File("log"), true)
+      try {
+        fw.append(x + "\n")
+        fw.flush()
+      } finally {
+        fw.close()
+      }
+  }
+}
+
 trait IndexerService {
+  val ind = Akka.system.actorOf(Props[Ind])
+  def jarDir: String
+  def jars = new java.io.File(jarDir).listFiles().filter(_.getName().endsWith(".jar"))
+  var jarsToIndex: Int
+  def jarListBackup: String
+  def cachedJars = new java.io.File(jarListBackup)
 
-  private val jarDir      = ConfigFactory.load.getString("repoPath")
-  private val jars        = new java.io.File(jarDir).listFiles().filter(_.getName().contains(".jar"))
-  private var jarsToIndex = jars.length
-  private val cachedJars  = new java.io.File(ConfigFactory.load.getString("jarListBackup"))
-
-  private val indexer     = Akka.system.actorOf(Props(new Actor {
+  private val indexer = Akka.system.actorOf(Props(new Actor {
     def receive = {
       case DoneIndexing(jarPath) =>
+        ind ! s"Jars left were $jarsToIndex"
         jarsToIndex -= 1
+        ind ! s"Jars now left $jarsToIndex"
         indexingFinished(jarPath)
         if (jarsToIndex == 0) {
+          ind ! "Indexing finished."
           persistIndex
         }
 
@@ -51,9 +67,13 @@ trait IndexerService {
 
   def index(jarPath: String) {
     val jarFile = new JarFile(jarPath)
+    ind ! s"Indexing $jarPath now."
     jarFile.entries.filter(_.getName.contains(".java")) foreach { x =>
+      val nm = x.getName
+      ind ! s"Inside $nm"
       extractMethods(x.getName, jarFile.getInputStream(x), jarPath)
     }
+    ind ! "finished with this jar"
     indexer ! DoneIndexing(jarPath)
   }
 
@@ -76,6 +96,7 @@ trait IndexerService {
       val start = cu.getLineNumber(node.getStartPosition)
       val end = start + cu.getLineNumber(node.getLength)
       val body = processBody(node)
+//      ind ! "processing " + node.getName + " It invokes - "
       addFunc(fqn + "." + node.getName.getFullyQualifiedName, new Func(fqn + "." + node.getName.getFullyQualifiedName, start, end, body, jarName.split('/').toList.last))
       super.visit(node)
     }
@@ -103,6 +124,7 @@ trait IndexerService {
         invokeMap += (name -> Option(node.resolveMethodBinding()).map { x =>
           x.getDeclaringClass.getPackage.getName + "." + x.getDeclaringClass.getName + "." + name
         }.getOrElse(""))
+//        ind ! node.getName
         super.visit(node)
       }
     }
@@ -110,7 +132,7 @@ trait IndexerService {
 
 
   def indexingFinished(jar: String) {
-    val fw = new FileWriter(new File(ConfigFactory.load.getString("jarListBackup")), true)
+    val fw = new FileWriter(new File(jarListBackup), true)
     try {
       fw.append(jar + "\n")
       fw.flush()
@@ -122,10 +144,9 @@ trait IndexerService {
 }
 
 object MapIndexer extends IndexerService {
-  private val jarDir           = ConfigFactory.load.getString("repoPath")
-  private val jars             = new java.io.File(jarDir).listFiles().filter(_.getName().contains(".jar"))
-  private var jarsToIndex: Int = jars.length
-  private val cachedJars       = new java.io.File(ConfigFactory.load.getString("jarListBackup"))
+  val jarDir        = ConfigFactory.load.getString("repoPath")
+  val jarListBackup = ConfigFactory.load.getString("jarListBackup")
+  var jarsToIndex   = jars.length
 
   def addFunc(fName: String, f: Func) {
     Functions.getFunc(fName, f.jarName) match {
@@ -134,9 +155,7 @@ object MapIndexer extends IndexerService {
     }
   }
 
-  def persistIndex {
-    Functions.store
-  }
+  def persistIndex = Functions.store
 
   def init {
     Functions.load
@@ -147,7 +166,6 @@ object MapIndexer extends IndexerService {
           future((index(x.getPath)))
         } else {
           jarsToIndex -= 1
-          indexingFinished(x.getPath)
         }
       }
     } catch {

@@ -9,11 +9,13 @@ import com.typesafe.config.ConfigFactory
 import java.io.FileNotFoundException
 
 
-object Functions {
-	private var funcMap: FuncMap = _
+trait FunctionStore {
+	var funcMap: FuncMap = _
+
+  def getPath: String
 
 	def load = {
-     funcMap = FuncMap.load 
+     funcMap = FuncMap.load(getPath)
 	}
 	
 	def add(fqn: String, f: Func) = {
@@ -33,31 +35,35 @@ object Functions {
 	}
 
 	def store {
-		funcMap.store
+		funcMap.store(getPath)
 	}
 }
 
+object Functions extends FunctionStore {
+  def getPath = ConfigFactory.load.getString("mapBackup")
+}
+
 class FuncMap extends HashMap[String, Set[Func]] with MultiMap[String, Func] with Serializable {
-	
+
 	def enMap = {
 		val m = new HashMap[String, Set[List[String]]] with MultiMap[String, List[String]] with Serializable
-		this foreach { x => 
+		this foreach { x =>
 			x._2 foreach (y => m.addBinding(x._1, y.toList))
 		}
 		m
 	}
 
-	def store = {
+	def store(toPath: String) = {
 		val m = enMap
-		try {
-		  val fos = new FileOutputStream(ConfigFactory.load.getString("mapBackup"))
+    try {
+		  val fos = new FileOutputStream(toPath)
 		  val oos = new ObjectOutputStream(fos)
 		  oos.writeObject(m)
 		  oos.close()
 		  fos.close
 		} catch {
-		  case e: FileNotFoundException => 
-		    val f = new java.io.File(ConfigFactory.load.getString("mapBackup"))
+		  case e: FileNotFoundException =>
+		    val f = new java.io.File(toPath)
 		    val fos = new FileOutputStream(f)
 		    val oos = new ObjectOutputStream(fos)
 		    oos.writeObject(m)
@@ -77,9 +83,9 @@ object FuncMap {
 		fm
 	}
 
-	def load: FuncMap = {
+	def load(fromPath: String): FuncMap = {
 		try {
-		  val fis     = new FileInputStream(ConfigFactory.load.getString("mapBackup"))
+      val fis     = new FileInputStream(fromPath)
 		  val ois     = new ObjectInputStream(fis)
 		  val m       = ois.readObject.asInstanceOf[HashMap[String, Set[List[String]]] with MultiMap[String, List[String]]]
 		  ois.close

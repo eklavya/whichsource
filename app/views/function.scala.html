@@ -9,10 +9,35 @@
     <link rel="shortcut icon" type="image/png" href="@routes.Assets.at("images/favicon.png")">
     <script src="@routes.Assets.at("javascripts/jquery-1.9.0.min.js")" type="text/javascript"></script>
     <script src="@routes.Assets.at("javascripts/script_whichsource.js")" type="text/javascript"></script>
-    <link href='http://fonts.googleapis.com/css?family=Inconsolata:400' rel='stylesheet' type='text/css'>
-    <link href='http://fonts.googleapis.com/css?family=Inconsolata:400' rel='stylesheet' type='text/css'>
-    <link href='http://fonts.googleapis.com/css?family=Quintessential' rel='stylesheet' type='text/css'>
 
+    <script type="text/javascript">
+        $(document).ready(function() {
+            var funcs = window.localStorage.getItem("funcs");
+            var ind = funcs.indexOf(window.location);
+            if (ind != -1) {
+                funcs = funcs.slice(0, ind);
+            }
+            if (funcs == "") {
+                window.localStorage.setItem("funcs", window.location);
+            } else {
+                window.localStorage.setItem("funcs", funcs + ";" + window.location);
+            }
+            funcs = window.localStorage.getItem("funcs");
+            var crumbs = makeCrumbs(funcs);
+            $("#crumbs").html(crumbs);
+        });
+
+        function makeCrumbs(funcString) {
+            var a = funcString.split(";");
+            var html = "";
+            for(var i = 0; i < a.length; i++) {
+              var fullname = a[i].split("/").pop().split("&")[0];
+              var name = fullname.split(".").pop();
+              html += "<span class='breadCrumb'><a href='" + a[i] + "' title='" + fullname + "'>" + name + "</a></span>";
+            }
+            return html;
+        }
+    </script>
 </head>
 
 <body>
@@ -70,12 +95,12 @@
         </div>
 
     </div>
+    <div id="crumbs"></div>
     <div id ="details">
         @defining(Html(resList.map(x => "<div class='body'>" + x + "</div>").mkString(" "))) { sources =>
         <div id="source" class="play-error-page"> @sources </div>
         }
     </div>
 </div>
-
 </body>
 </html>
