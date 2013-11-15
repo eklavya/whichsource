@@ -44,7 +44,7 @@ body {
 			}
 
 #directory{
-		margin-top : 63px;
+		margin-top : 75px;
 		background-color : none;
 		width : 20%;
 		z-index : -1;
@@ -57,15 +57,24 @@ body {
 		padding-top: 10px;
 		}
 
-#details{
-		margin-top : 63px;
+#crumbs {
+		margin-top : 75px;
 		background-color : none;
 		width : 79.6%;
 		padding: 0%;
-		height: 90%;
+		float : right;
+		overflow: auto;
+}
+
+#details{
+		background-color : none;
+		width : 79.6%;
+		padding: 0%;
+		height: 80%;
 		float : right;
 		overflow: auto;
 		}
+
 .inputbox{
 		border-radius:8px;
 		width: 300px;
