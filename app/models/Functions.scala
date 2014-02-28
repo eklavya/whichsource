@@ -1,13 +1,12 @@
 package models
 
-import scala.collection.mutable.{ HashMap, MultiMap, Set }
+import com.typesafe.config.ConfigFactory
 import java.io.FileInputStream
+import java.io.FileNotFoundException
 import java.io.FileOutputStream
 import java.io.ObjectInputStream
 import java.io.ObjectOutputStream
-import com.typesafe.config.ConfigFactory
-import java.io.FileNotFoundException
-
+import scala.collection.mutable.{HashMap, MultiMap, Set}
 
 trait FunctionStore {
 	var funcMap: FuncMap = _
@@ -26,8 +25,8 @@ trait FunctionStore {
 		!conds.exists{case(f, l) => !funcMap.entryExists(f, x => (l.toInt >= x.start) && (l.toInt <= x.end))}
 	}
 
-	def findFunc(f: String, l: Int): List[Func] = {
-		funcMap(f).filter(x => (l.toInt >= x.start) && (l.toInt <= x.end)).toList
+	def findFunc(f: String, l: Int): Func = {
+    funcMap.filter(y => y._1.contains(f)).filter(x => (l.toInt >= x._2.last.start) && (l.toInt <= x._2.last.end)).last._2.last
 	}
 
 	def getFunc(f: String, jarName: String): Option[List[Func]] = {

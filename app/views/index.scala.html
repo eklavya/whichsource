@@ -101,8 +101,8 @@
     </div>
     <div id="crumbs"></div>
     <div id ="details">
-        @form(action = routes.Application.sourceFinder()) {
-            <textarea name="trace" id="trace" placeholder="Paste your stacktrace here."></textarea>
+        @form(routes.Application.sourceFinder) {
+            <textarea name="trace" id="trace" placeholder="@message"></textarea>
             <input name="submit" id="submit" type="submit" value="Post" />
         }
     </div>

@@ -6,9 +6,7 @@
  * To change this template use File | Settings | File Templates.
  */
 
-import com.typesafe.config.ConfigFactory
-import java.io.{File, FileOutputStream, BufferedOutputStream}
-import java.net.URL
+import java.io.File
 import models.MapIndexer
 import play.api._
 import scala.io.Source

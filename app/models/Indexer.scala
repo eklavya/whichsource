@@ -1,23 +1,21 @@
 package models
 
-import akka.actor._
-import collection.JavaConversions._
-import scala.concurrent._
-import ExecutionContext.Implicits.global
-import java.util.jar.JarFile
-import java.io.{File, InputStream, FileWriter, FileNotFoundException}
-
 import Indexing._
-import org.eclipse.jdt.core.dom._
-import scala.io.Codec
-import play.api.templates.Html
+import akka.actor._
 import com.typesafe.config.ConfigFactory
-import scala.concurrent._
-import scala.Some
+import java.io.{File, InputStream, FileWriter, FileNotFoundException}
+import java.util.jar.JarFile
+import org.eclipse.jdt.core.dom._
+import play.api.templates.Html
 import play.libs.Akka
+import scala.collection.JavaConversions._
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent._
+import scala.io.Codec
+
 
 object Indexing {
-  case class GotIt(funcs: Map[String, List[Html]])
+  case class GotIt(funcs: List[(String, Html)])
   case class SearchFuncs(cond: List[(String, String)])
   case class DoneIndexing(jarPath: String)
   case class NotIt(fl: List[String])
@@ -77,6 +75,13 @@ trait IndexerService {
     indexer ! DoneIndexing(jarPath)
   }
 
+  /**
+   * Extracting Methods From each .java entry in the JAR.
+   *
+   * @param fName *.java name
+   * @param is JAR as inputstream
+   * @param jarPath JAR path
+   */
   def extractMethods(fName: String, is: InputStream, jarPath: String) {
     val parser = ASTParser.newParser(AST.JLS4)
     // or use codec "latin1" !!!important
@@ -94,14 +99,24 @@ trait IndexerService {
   class MethodVisitor(cu: CompilationUnit, fqn: String, jarName: String) extends ASTVisitor {
     override def visit(node: MethodDeclaration) = {
       val start = cu.getLineNumber(node.getStartPosition)
-      val end = start + cu.getLineNumber(node.getLength)
+      val end = cu.getLineNumber(node.getStartPosition + node.getLength)
       val body = processBody(node)
+      val name = node.getName.getFullyQualifiedName
 //      ind ! "processing " + node.getName + " It invokes - "
-      addFunc(fqn + "." + node.getName.getFullyQualifiedName, new Func(fqn + "." + node.getName.getFullyQualifiedName, start, end, body, jarName.split('/').toList.last))
+      val index = fqn + "." + name + "(" + node.parameters().map {
+        x=> x.toString.split(" ").head
+      }.mkString(",") + ")"
+      addFunc(index, new Func(fqn + "." + name, start, end, body, jarName.split('/').toList.last))
       super.visit(node)
     }
 
-    def processBody(node: MethodDeclaration) = {
+    /**
+     * Processing the body and allowing to navigate through all the method calls.
+     *
+     * @param node
+     * @return
+     */
+    def processBody(node: MethodDeclaration): Option[String] = {
       Option(node.getBody) match {
         case Some(x) =>
           val invokeMap = scala.collection.mutable.Map.empty[String, String]

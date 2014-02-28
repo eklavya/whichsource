@@ -1,21 +1,21 @@
 package controllers
 
-import play.api.mvc._
-import akka.actor.Props
 import akka.actor.ActorRef
-import play.api.libs.concurrent.Akka
+import akka.actor.Props
 import akka.pattern.ask
-import play.api.data._
-import play.api.data.Forms._
-import play.api.Play.current
 import akka.util.Timeout
-import scala.concurrent.duration._
-import scala.concurrent._
-import play.api.libs.concurrent.Execution.Implicits._
-import models.Indexing._
-import play.api.templates.Html
 import java.io._
+import models.Indexing._
 import models._
+import play.api.Play.current
+import play.api.data.Forms._
+import play.api.data._
+import play.api.libs.concurrent.Akka
+import play.api.libs.concurrent.Execution.Implicits._
+import play.api.mvc._
+import play.api.templates.Html
+import scala.concurrent._
+import scala.concurrent.duration._
 
 object Application extends Controller {
   implicit val timeout = Timeout(6.second)
@@ -44,7 +44,7 @@ object Application extends Controller {
       Future(BadRequest("Not a valid stacktrace."))
     } else {
       val resMap = askAndAcc(askers)
-      resMap map { x: Map[String, List[Html]] =>
+      resMap map { x: List[(String, Html)] =>
         processStack(trace, x)
       }
     }
@@ -80,29 +80,28 @@ object Application extends Controller {
 
   def askAndAcc(askers: Set[(ActorRef, SearchFuncs)]) = {
     val futures = askers.map(a => a._1 ? a._2)
-    val names = Future.fold(futures)(Map.empty[String, List[Html]])((a, b) => b match {
+    val names = Future.fold(futures)(List.empty[(String, Html)])((a, b) => b match {
       case GotIt(funcs) => a ++ b.asInstanceOf[GotIt].funcs
-      case NotIt(fl) => a ++ fl.foldLeft(Map.empty[String, List[Html]])((a, f) => a + (f -> List(Html("<div><p class='notFound'>Not Found</p></div>")))) //map((_, )).toMap
     })
     names
   }
 
-  def processStack(trace: String, fMap: Map[String, List[Html]]) = {
-    val resl = fMap.toList
+  def processStack(trace: String, fMap: List[(String, Html)]) = {
+    val linenos = for(result <- fMap) yield result._1.split(':').last
     val h = Html(trace.split('\n').map { x =>
       if (x.contains(".java:")) {
-        val i = resl.zipWithIndex.find(_._1._1 == x.split(' ').last.split('(').head).get._2
-        "<li><p title='" + x + "' class='traceLine' id='func" + i + "' onclick='showSource(" + i + ")'>" +
+        val line = x.split(':').last.split(')').head
+        "<li><p title='" + x + "' class='traceLine' id='func" + line + "' onclick='showSource(" + line + ")'>" +
           shortHand(x) + "</p></li>"
       } else {
         x
       }
     }.mkString(" "))
-    Ok(views.html.results(resl, h))
+    Ok(views.html.results(fMap.zip(linenos), h))
   }
 
   def shortHand(s: String): String = {
-    val list = s.split('.').zipWithIndex
+    val list = s.split(' ').last.split('.').zipWithIndex
     list.map { x =>
       if (x._2 > 4 && x._2 < (list.size - 3)) "."
       else if (x._2 < (list.size - 3))        "" + x._1.head
