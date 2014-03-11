@@ -111,8 +111,7 @@ object Application extends Controller {
 
   def getFunc(f: String) = Action {
     val fName = f.split('&')(0)
-    val jarName = f.split('&')(1)
-    Functions.getFunc(fName, jarName).map { func =>
+    Functions.getFunc(fName).map { func =>
       Ok(views.html.function(func.map{ f =>
         views.html.source.render(f.jarName + " inside " + f.name.split('.').dropRight(1).last +".java ", f.body.map(g => g.split('\n').toList).getOrElse(List()), f.start, 0)
         }.toList, Html("<p class='traceLine'>" + fName + "</p>")))

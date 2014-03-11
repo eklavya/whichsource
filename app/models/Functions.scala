@@ -29,8 +29,8 @@ trait FunctionStore {
     funcMap.filter(y => y._1.contains(f)).filter(x => (l.toInt >= x._2.last.start) && (l.toInt <= x._2.last.end)).last._2.last
 	}
 
-	def getFunc(f: String, jarName: String): Option[List[Func]] = {
-    funcMap.get(f).map(x => x.filter(_.jarName == jarName).toList)
+	def getFunc(f: String): Option[List[Func]] = {
+    funcMap.get(f).map(x => x.toList)
 	}
 
 	def store {

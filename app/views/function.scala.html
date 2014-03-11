@@ -16,6 +16,7 @@
             var ind = funcs.indexOf(window.location);
             if (ind != -1) {
                 funcs = funcs.slice(0, ind);
+                funcs = funcs.slice(0, (funcs.length-1))
             }
             if (funcs == "") {
                 window.localStorage.setItem("funcs", window.location);
@@ -32,8 +33,9 @@
             var html = "";
             for(var i = 0; i < a.length; i++) {
               var fullname = a[i].split("/").pop().split("&")[0];
-              var name = fullname.split(".").pop();
-              html += "<span class='breadCrumb'><a href='" + a[i] + "' title='" + fullname + "'>" + name + "</a></span>";
+              var name = fullname.replace(/%28/g,"(").replace(/%29/g,")").replace(/%5b/g,"[").replace(/%5d/g,"]");
+              var methodName = name.split('.').pop().split('(')[0];
+              html += "<span class='breadCrumb'><a href='" + a[i] + "' title='" + name + "'>" + methodName + "</a></span>>";
             }
             return html;
         }

@@ -102,10 +102,9 @@ trait IndexerService {
       val end = cu.getLineNumber(node.getStartPosition + node.getLength)
       val body = processBody(node)
       val name = node.getName.getFullyQualifiedName
-//      ind ! "processing " + node.getName + " It invokes - "
-      val index = fqn + "." + name + "(" + node.parameters().map {
-        x=> x.toString.split(" ").head
-      }.mkString(",") + ")"
+      val index = fqn + "." + name + "(" + node.parameters().map { x =>
+        x.toString.split(" ").head
+      }.mkString(",") + "):" + node.getReturnType2
       addFunc(index, new Func(fqn + "." + name, start, end, body, jarName.split('/').toList.last))
       super.visit(node)
     }
@@ -121,10 +120,13 @@ trait IndexerService {
         case Some(x) =>
           val invokeMap = scala.collection.mutable.Map.empty[String, String]
           Option(node.getBody).map(_.accept(new MethodInvocationVisitor(invokeMap)))
-          var body = node.toString
+          var body = node.toString.replaceAll("&", "&amp;").replace(">", "&gt;").
+            replace("<", "&lt;").replace("\"", "&quot;")
           invokeMap foreach {
             case (k, v) =>
-              body = body.replaceAll(k + """\(""", "<a href='/func/" + v + "&" + jarName.split('/').toList.last + "'>" + k + "</a>(")
+              body = body.replaceAll(k + """\(""", "<a href='/func/" +
+                v.split('&').toList.head + "' title = '" +
+                v.split('&').toList.last + "'>" + k + "</a>(")
           }
           Some(body)
 
@@ -136,10 +138,19 @@ trait IndexerService {
     class MethodInvocationVisitor(invokeMap: scala.collection.mutable.Map[String, String]) extends ASTVisitor {
       override def visit(node: MethodInvocation) = {
         val name = node.getName.getFullyQualifiedName
+        val specialChars = Array[Char]('[',']')
         invokeMap += (name -> Option(node.resolveMethodBinding()).map { x =>
-          x.getDeclaringClass.getPackage.getName + "." + x.getDeclaringClass.getName + "." + name
+          x.getDeclaringClass.getPackage.getName + "." + x.getDeclaringClass.getName + "." +
+            name + "%28" + x.getParameterTypes.map { x =>
+              x.getName.map { y =>
+              if(specialChars.contains(y)) '%' + Integer.toHexString(y.toInt) else y
+            }.mkString
+          }.mkString(",") + "%29:" + x.getReturnType.getName.map { y =>
+            if(specialChars.contains(y)) '%' + Integer.toHexString(y.toInt) else y
+          }.mkString + "&" + x.getDeclaringClass.getPackage.getName + "." +
+            x.getDeclaringClass.getName + "." + name + "(" + x.getParameterTypes.map { x => x.getName
+          }.mkString(",") + "):" + x.getReturnType.getName
         }.getOrElse(""))
-//        ind ! node.getName
         super.visit(node)
       }
     }
@@ -164,7 +175,7 @@ object MapIndexer extends IndexerService {
   var jarsToIndex   = jars.length
 
   def addFunc(fName: String, f: Func) {
-    Functions.getFunc(fName, f.jarName) match {
+    Functions.getFunc(fName) match {
       case Some(x) => if (x.isEmpty) Functions.add(fName, f)
       case None => Functions.add(fName, f)
     }
@@ -177,7 +188,8 @@ object MapIndexer extends IndexerService {
     try {
       val files = io.Source.fromFile(cachedJars).getLines
       jars foreach { x: java.io.File =>
-        if (!files.contains(x.getName)) {
+        if (!files.contains(jarDir + x.getName)) {
+          println(jarDir + x.getName)
           future((index(x.getPath)))
         } else {
           jarsToIndex -= 1
