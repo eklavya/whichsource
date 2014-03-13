@@ -1,23 +1,21 @@
 package models
 
-import akka.actor._
-import collection.JavaConversions._
-import scala.concurrent._
-import ExecutionContext.Implicits.global
-import java.util.jar.JarFile
-import java.io.{File, InputStream, FileWriter, FileNotFoundException}
-
 import Indexing._
-import org.eclipse.jdt.core.dom._
-import scala.io.Codec
-import play.api.templates.Html
+import akka.actor._
 import com.typesafe.config.ConfigFactory
-import scala.concurrent._
-import scala.Some
+import java.io.{File, InputStream, FileWriter, FileNotFoundException}
+import java.util.jar.JarFile
+import org.eclipse.jdt.core.dom._
+import play.api.templates.Html
 import play.libs.Akka
+import scala.collection.JavaConversions._
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent._
+import scala.io.Codec
+
 
 object Indexing {
-  case class GotIt(funcs: Map[String, List[Html]])
+  case class GotIt(funcs: List[(String, Html)])
   case class SearchFuncs(cond: List[(String, String)])
   case class DoneIndexing(jarPath: String)
   case class NotIt(fl: List[String])
@@ -77,6 +75,13 @@ trait IndexerService {
     indexer ! DoneIndexing(jarPath)
   }
 
+  /**
+   * Extracting Methods From each .java entry in the JAR.
+   *
+   * @param fName *.java name
+   * @param is JAR as inputstream
+   * @param jarPath JAR path
+   */
   def extractMethods(fName: String, is: InputStream, jarPath: String) {
     val parser = ASTParser.newParser(AST.JLS4)
     // or use codec "latin1" !!!important
@@ -94,26 +99,47 @@ trait IndexerService {
   class MethodVisitor(cu: CompilationUnit, fqn: String, jarName: String) extends ASTVisitor {
     override def visit(node: MethodDeclaration) = {
       val start = cu.getLineNumber(node.getStartPosition)
-      val end = start + cu.getLineNumber(node.getLength)
+      val end = cu.getLineNumber(node.getStartPosition + node.getLength)
       val body = processBody(node)
-//      ind ! "processing " + node.getName + " It invokes - "
-      addFunc(fqn + "." + node.getName.getFullyQualifiedName, new Func(fqn + "." + node.getName.getFullyQualifiedName, start, end, body, jarName.split('/').toList.last))
+      val fullyQualifiedName = getFullName(node)
+      val index = fullyQualifiedName + "(" + node.parameters().map { x =>
+        x.toString.split(" ").head
+      }.mkString(",") + "):" + node.getReturnType2
+      addFunc(index, new Func(fullyQualifiedName, start, end, body, jarName.split('/').toList.last))
       super.visit(node)
     }
 
-    def processBody(node: MethodDeclaration) = {
+    def getFullName(node: MethodDeclaration): String = {
+      Option(node.resolveBinding()).map { x =>
+        if(fqn.equals(x.getDeclaringClass.getPackage.getName + "." + x.getDeclaringClass.getName))
+          fqn + "." + x.getName
+        else
+          fqn + "." + x.getDeclaringClass.getName + "." + x.getName
+      }.getOrElse(fqn + "." + node.getName.getFullyQualifiedName)
+    }
+
+    /**
+     * Processing the body and allowing to navigate through all the method calls.
+     *
+     * @param node
+     * @return
+     */
+    def processBody(node: MethodDeclaration): Option[String] = {
       Option(node.getBody) match {
         case Some(x) =>
           val invokeMap = scala.collection.mutable.Map.empty[String, String]
           Option(node.getBody).map(_.accept(new MethodInvocationVisitor(invokeMap)))
-          var body = node.toString
+          var body = node.toString.replaceAll("&", "&amp;").replace(">", "&gt;").
+            replace("<", "&lt;").replace("\"", "&quot;")
           invokeMap foreach {
             case (k, v) =>
-              body = body.replaceAll(k + """\(""", "<a href='/func/" + v + "&" + jarName.split('/').toList.last + "'>" + k + "</a>(")
+              body = body.replaceAll(k + """\(""", "<a href='/func/" +
+                v.split('&').toList.head + "' title = '" +
+                v.split('&').toList.last + "'>" + k + "</a>(")
           }
           Some(body)
 
-        case None => None
+        case None => Some(node.toString)
       }
 
     }
@@ -121,10 +147,19 @@ trait IndexerService {
     class MethodInvocationVisitor(invokeMap: scala.collection.mutable.Map[String, String]) extends ASTVisitor {
       override def visit(node: MethodInvocation) = {
         val name = node.getName.getFullyQualifiedName
+        val specialChars = Array[Char]('[',']')
         invokeMap += (name -> Option(node.resolveMethodBinding()).map { x =>
-          x.getDeclaringClass.getPackage.getName + "." + x.getDeclaringClass.getName + "." + name
+          x.getDeclaringClass.getPackage.getName + "." + x.getDeclaringClass.getName + "." +
+            name + "%28" + x.getParameterTypes.map { x =>
+              x.getName.map { y =>
+              if(specialChars.contains(y)) '%' + Integer.toHexString(y.toInt) else y
+            }.mkString
+          }.mkString(",") + "%29:" + x.getReturnType.getName.map { y =>
+            if(specialChars.contains(y)) '%' + Integer.toHexString(y.toInt) else y
+          }.mkString + "&" + x.getDeclaringClass.getPackage.getName + "." +
+            x.getDeclaringClass.getName + "." + name + "(" + x.getParameterTypes.map { x => x.getName
+          }.mkString(",") + "):" + x.getReturnType.getName
         }.getOrElse(""))
-//        ind ! node.getName
         super.visit(node)
       }
     }
@@ -149,7 +184,7 @@ object MapIndexer extends IndexerService {
   var jarsToIndex   = jars.length
 
   def addFunc(fName: String, f: Func) {
-    Functions.getFunc(fName, f.jarName) match {
+    Functions.getFunc(fName) match {
       case Some(x) => if (x.isEmpty) Functions.add(fName, f)
       case None => Functions.add(fName, f)
     }
@@ -162,7 +197,8 @@ object MapIndexer extends IndexerService {
     try {
       val files = io.Source.fromFile(cachedJars).getLines
       jars foreach { x: java.io.File =>
-        if (!files.contains(x.getName)) {
+        if (!files.contains(jarDir + x.getName)) {
+          println(jarDir + x.getName)
           future((index(x.getPath)))
         } else {
           jarsToIndex -= 1

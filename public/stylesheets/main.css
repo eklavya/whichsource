@@ -264,3 +264,7 @@ span {
     color: white;
     text-decoration: none;
 }
+
+#directory li {
+    cursor: pointer;
+}
