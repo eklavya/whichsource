@@ -22,20 +22,7 @@ object Indexing {
   case class Index(jarPath: String)
 }
 
-class Ind extends Actor {
-  def receive = {
-    case x => val fw = new FileWriter(new File("log"), true)
-      try {
-        fw.append(x + "\n")
-        fw.flush()
-      } finally {
-        fw.close()
-      }
-  }
-}
-
 trait IndexerService {
-  val ind = Akka.system.actorOf(Props[Ind])
   def jarDir: String
   def jars = new java.io.File(jarDir).listFiles().filter(_.getName().endsWith(".jar"))
   var jarsToIndex: Int
@@ -45,12 +32,9 @@ trait IndexerService {
   private val indexer = Akka.system.actorOf(Props(new Actor {
     def receive = {
       case DoneIndexing(jarPath) =>
-        ind ! s"Jars left were $jarsToIndex"
         jarsToIndex -= 1
-        ind ! s"Jars now left $jarsToIndex"
         indexingFinished(jarPath)
         if (jarsToIndex == 0) {
-          ind ! "Indexing finished."
           persistIndex
         }
 
@@ -65,13 +49,10 @@ trait IndexerService {
 
   def index(jarPath: String) {
     val jarFile = new JarFile(jarPath)
-    ind ! s"Indexing $jarPath now."
     jarFile.entries.filter(_.getName.contains(".java")) foreach { x =>
       val nm = x.getName
-      ind ! s"Inside $nm"
       extractMethods(x.getName, jarFile.getInputStream(x), jarPath)
     }
-    ind ! "finished with this jar"
     indexer ! DoneIndexing(jarPath)
   }
 
